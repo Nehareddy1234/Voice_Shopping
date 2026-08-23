@@ -2,6 +2,7 @@ node_modules
 dist
 dist-ssr
 *.local
+.tmp-*.cjs
 .tmp-verify.cjs
 .vercel-tmp/
 .env
