@@ -1139,7 +1139,7 @@ const ALIASES = {
     pates: 'pasta', saumon: 'salmon', glace: 'ice cream', huile: 'olive oil', miel: 'honey',
     the: 'tea', 'lait davoine': 'oat milk', bacon: 'bacon', crevettes: 'shrimp', epinards: 'spinach',
     carottes: 'carrots', citrons: 'lemons', avocat: 'avocados', avocats: 'avocados',
-    orange: 'oranges', oranges: 'oranges', ananas: 'pineapple', mangue: 'mango',
+    ananas: 'pineapple', mangue: 'mango',
     ail: 'garlic', 'pommes de terre': 'potatoes', raisins: 'grapes', concombre: 'cucumber',
     sucre: 'sugar', soupe: 'soup', cereales: 'cereal', savon: 'soap', chips: 'chips',
     champignons: 'mushrooms', thon: 'tuna',
@@ -1151,8 +1151,8 @@ const ALIASES = {
     chai: 'tea', 'चाय': 'tea', chawal: 'rice', 'चावल': 'rice', makkhan: 'butter', 'मक्खन': 'butter',
     dahi: 'yogurt', 'दही': 'yogurt', atta: 'flour', 'आटा': 'flour', kela: 'bananas', 'केला': 'bananas',
     gajar: 'carrots', 'गाजर': 'carrots', nimbu: 'lemons', 'नींबू': 'lemons',
-    biscuit: 'cookies', coffee: 'coffee', 'कॉफ़ी': 'coffee', chocolate: 'chocolate', 'चॉकलेट': 'chocolate',
-    avocados: 'avocados', shimla: 'capsicum',
+    'कॉफ़ी': 'coffee', 'चॉकलेट': 'chocolate',
+    'शिमला मिर्च': 'capsicum', shimla: 'capsicum',
     santra: 'oranges', santre: 'oranges', 'संतरा': 'oranges', 'संतरे': 'oranges',
     ananas: 'pineapple', 'अनानास': 'pineapple',
     lehsun: 'garlic', 'लहसुन': 'garlic', aaloo: 'potatoes', aloo: 'potatoes', 'आलू': 'potatoes',
@@ -1162,13 +1162,13 @@ const ALIASES = {
   },
   de: {
     milch: 'milk', brot: 'bread', eier: 'eggs', ei: 'eggs', apfel: 'apples', apfeln: 'apples',
-    reis: 'rice', kase: 'cheese', haehnchen: 'chicken', huhn: 'chicken', butter: 'butter',
+    reis: 'rice', kase: 'cheese', haehnchen: 'chicken', huhn: 'chicken',
     joghurt: 'yogurt', kaffee: 'coffee', zwiebeln: 'onion', zwiebel: 'onion', tomaten: 'tomatoes',
     erdbeeren: 'strawberries', saft: 'juice', wasser: 'water', schokolade: 'chocolate', kekse: 'cookies',
     nudeln: 'pasta', lachs: 'salmon', eis: 'ice cream', oel: 'olive oil', honig: 'honey',
     tee: 'tea', hafermilch: 'oat milk', speck: 'bacon', garnelen: 'shrimp', spinat: 'spinach',
-    karotten: 'carrots', zitronen: 'lemons', avocado: 'avocados', avocados: 'avocados',
-    orange: 'oranges', orangen: 'oranges', ananas: 'pineapple', mango: 'mango',
+    karotten: 'carrots', zitronen: 'lemons', orangen: 'oranges', orang: 'oranges',
+    ananas: 'pineapple', mango: 'mango',
     knoblauch: 'garlic', kartoffeln: 'potatoes', trauben: 'grapes', gurke: 'cucumber',
     zucker: 'sugar', suppe: 'soup', seife: 'soap', chips: 'chips', pilze: 'mushrooms',
     thunfisch: 'tuna',
@@ -1380,9 +1380,21 @@ export const languageMeta = (short, source = 'default') => {
   return { short: entry.short, code: entry.code, label: entry.label, flag: entry.flag, source };
 };
 
+const ENGLISH_CORE_VOCAB = new Set([
+  'milk', 'eggs', 'egg', 'bread', 'butter', 'cheese', 'apples', 'apple', 'bananas', 'banana',
+  'oranges', 'orange', 'strawberries', 'strawberry', 'blueberries', 'blueberry', 'potatoes', 'potato',
+  'tomatoes', 'tomato', 'onions', 'onion', 'garlic', 'spinach', 'carrots', 'carrot', 'broccoli',
+  'chicken', 'beef', 'pork', 'salmon', 'tuna', 'shrimp', 'turkey', 'bacon', 'rice', 'pasta',
+  'quinoa', 'oats', 'cereal', 'flour', 'sugar', 'salt', 'pepper', 'oil', 'olive', 'water',
+  'juice', 'coffee', 'tea', 'yogurt', 'cream', 'cookies', 'cookie', 'chips', 'nuts', 'chocolate',
+  'soap', 'paper', 'towel', 'detergent', 'diapers', 'wipes', 'cat', 'dog', 'food', 'snack', 'snacks'
+]);
+
 const lexiconScore = (normText, short) => {
   const tokens = normText.split(' ');
   let score = 0;
+
+  // 1. Action verbs matching (3 pts for multi-word, 2 pts for single-word)
   for (const action of Object.keys(ACTION_VERBS)) {
     for (const verb of ACTION_VERBS[action][short] || []) {
       const v = normalize(verb);
@@ -1394,9 +1406,35 @@ const lexiconScore = (normText, short) => {
       }
     }
   }
+
+  // 2. Multilingual alias vocabulary matching (3 pts)
   for (const term of Object.keys(ALIASES[short] || {})) {
     if (tokens.includes(term)) score += 3;
   }
+
+  // 3. English core catalog nouns matching (3 pts)
+  if (short === 'en') {
+    for (const token of tokens) {
+      if (ENGLISH_CORE_VOCAB.has(token) || ENGLISH_CORE_VOCAB.has(singular(token))) {
+        score += 3;
+      }
+    }
+  }
+
+  // 4. Unit words matching (1 pt)
+  for (const group of UNIT_WORDS) {
+    for (const word of group.words) {
+      if (tokens.includes(word)) {
+        // match specific language unit words
+        if (short === 'es' && ['botellas', 'botella', 'bolsa', 'bolsas', 'caja', 'cajas', 'paquete', 'paquetes', 'frasco', 'lata', 'latas', 'docena', 'libra', 'libras', 'litro', 'litros'].includes(word)) score += 1;
+        else if (short === 'fr' && ['bouteille', 'bouteilles', 'sachet', 'boite', 'paquet', 'bocal', 'douzaine', 'livre', 'livres', 'litre', 'litres'].includes(word)) score += 1;
+        else if (short === 'de' && ['flasche', 'flaschen', 'beutel', 'schachtel', 'packung', 'glas', 'dose', 'dosen', 'dutzend', 'pfund'].includes(word)) score += 1;
+        else if (short === 'hi' && ['बोतल', 'बोतलें', 'बॉक्स', 'थैला', 'बैग', 'डब्बा', 'पैकेट', 'डब्बे', 'दर्जन', 'किलो', 'लीटर'].includes(word)) score += 2;
+        else if (short === 'en' && ['bottle', 'bottles', 'carton', 'cartons', 'loaf', 'loaves', 'bag', 'bags', 'box', 'boxes', 'pack', 'packs', 'jar', 'jars', 'can', 'cans', 'dozen', 'lb', 'lbs', 'pound', 'pounds', 'liter', 'liters'].includes(word)) score += 1;
+      }
+    }
+  }
+
   return score;
 };
 

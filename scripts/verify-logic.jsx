@@ -129,12 +129,36 @@ check('DE qty', r.quantity, 2);
 check('DE unit kilo', r.unit, 'kilo');
 check('DE alias apfel -> apples', r.itemName, 'apples');
 
-// --- Language detection ---
-check('detect ES', detectLanguage('añade leche por favor', 'en').short, 'es');
-check('detect HI by script', detectLanguage('दूध जोड़ो', 'en').short, 'hi');
-check('detect HI hinglish', detectLanguage('pyaz teen kilo add karo', 'en').short, 'hi');
-check('detect DE', detectLanguage('füge milch hinzu', 'en').short, 'de');
-check('detect EN fallback', detectLanguage('add milk', 'en').short, 'en');
+// --- Language detection (Multi-locale regression suite) ---
+check('detect EN add milk with ES fallback', detectLanguage('add milk', 'es').short, 'en');
+check('detect EN bare milk with ES fallback', detectLanguage('milk', 'es').short, 'en');
+check('detect EN two bottles of milk with ES fallback', detectLanguage('two bottles of milk', 'es').short, 'en');
+check('detect EN add apples', detectLanguage('add apples', 'es').short, 'en');
+check('detect EN find oranges', detectLanguage('find oranges', 'es').short, 'en');
+check('detect EN orange juice', detectLanguage('orange juice', 'es').short, 'en');
+check('detect EN clear list', detectLanguage('clear list', 'es').short, 'en');
+check('detect EN remove eggs', detectLanguage('remove eggs', 'es').short, 'en');
+check('detect EN change milk to 3', detectLanguage('change milk to 3', 'es').short, 'en');
+
+check('detect ES añade leche por favor', detectLanguage('añade leche por favor', 'en').short, 'es');
+check('detect ES agregar dos botellas de leche', detectLanguage('agregar dos botellas de leche', 'en').short, 'es');
+check('detect ES bare leche with EN fallback', detectLanguage('leche', 'en').short, 'es');
+check('detect ES buscar manzanas', detectLanguage('buscar manzanas', 'en').short, 'es');
+
+check('detect FR ajouter du pain', detectLanguage('ajouter du pain', 'en').short, 'fr');
+check('detect FR deux bouteilles de lait', detectLanguage('deux bouteilles de lait', 'en').short, 'fr');
+check('detect FR bare fromage', detectLanguage('fromage', 'en').short, 'fr');
+
+check('detect HI by devanagari script', detectLanguage('दूध जोड़ो', 'en').short, 'hi');
+check('detect HI hinglish doodh add karo', detectLanguage('doodh add karo', 'en').short, 'hi');
+check('detect HI hinglish pyaz teen kilo add karo', detectLanguage('pyaz teen kilo add karo', 'en').short, 'hi');
+check('detect HI hinglish do kilo tamatar', detectLanguage('do kilo tamatar', 'en').short, 'hi');
+
+check('detect DE füge milch hinzu', detectLanguage('füge milch hinzu', 'en').short, 'de');
+check('detect DE zwei eier bitte', detectLanguage('zwei eier bitte', 'en').short, 'de');
+check('detect DE bare brot with EN fallback', detectLanguage('brot', 'en').short, 'de');
+
+check('detect unknown fallback preservation', detectLanguage('xyz123abc', 'fr').short, 'fr');
 
 // --- Multi-item & restock context ---
 check('multi split count', splitMultiItems('add milk, eggs and bread').length, 3);
