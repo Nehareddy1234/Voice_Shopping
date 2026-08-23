@@ -28,8 +28,14 @@ check('catalog has 100+ items', CATALOG.length >= 100, true);
 check('12 departments defined', DEPARTMENTS.length, 12);
 const usedCategories = new Set(CATALOG.map((item) => item.category));
 check('all 12 departments populated', usedCategories.size, 12);
-const schemaKeys = ['id', 'name', 'category', 'price', 'unit', 'brand', 'isOrganic', 'inStock', 'season', 'substitutes'];
+const schemaKeys = ['id', 'name', 'category', 'price', 'unit', 'brand', 'size', 'isOrganic', 'inStock', 'onSale', 'salePrice', 'season', 'substitutes'];
 check('every item matches canonical schema', CATALOG.every((item) => JSON.stringify(Object.keys(item).sort()) === JSON.stringify([...schemaKeys].sort())), true);
+check('every item has onSale boolean', CATALOG.every((item) => typeof item.onSale === 'boolean'), true);
+check('at least 10 items on sale', CATALOG.filter((item) => item.onSale).length >= 10, true);
+check('onSale items have valid salePrice', CATALOG.filter((item) => item.onSale).every((item) => typeof item.salePrice === 'number' && item.salePrice < item.price), true);
+check('every item has a non-empty size', CATALOG.every((item) => typeof item.size === 'string' && item.size.length > 0), true);
+check('size attribute search matches "500ml"', searchCatalog('500ml').length > 0, true);
+check('size attribute search matches "large"', searchCatalog('large').some((item) => /large/i.test(item.size)), true);
 check('ids are unique', new Set(CATALOG.map((item) => item.id)).size, CATALOG.length);
 check('substitutes are arrays of names', CATALOG.every((item) => Array.isArray(item.substitutes) && item.substitutes.every((s) => typeof s === 'string')), true);
 
@@ -60,6 +66,19 @@ check('EN price words', r.maxPrice, 4);
 r = parseIntent('remove the eggs', 'en');
 check('EN remove action', r.action, 'REMOVE');
 check('EN remove item', r.itemName, 'eggs');
+
+r = parseIntent('change milk to three', 'en');
+check('EN update action', r.action, 'UPDATE');
+check('EN update qty word', r.quantity, 3);
+check('EN update item', r.itemName, 'milk');
+
+r = parseIntent('set eggs to 6', 'en');
+check('EN update digit qty', r.quantity, 6);
+check('EN update digit item', r.itemName, 'eggs');
+
+r = parseIntent('cambia leche a dos', 'es');
+check('ES update action', r.action, 'UPDATE');
+check('ES update qty', r.quantity, 2);
 
 r = parseIntent('clear the list', 'en');
 check('EN clear action', r.action, 'CLEAR');

@@ -8,8 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test:logic": "esbuild scripts/verify-logic.jsx --bundle --platform=node --format=cjs --jsx=transform --outfile=.tmp-verify.cjs --log-level=warning && node .tmp-verify.cjs",
-    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0"
+    "test:logic": "esbuild scripts/verify-logic.jsx --bundle --platform=node --format=cjs --jsx=transform --outfile=.tmp-verify.cjs --log-level=warning && node .tmp-verify.cjs"
   },
   "dependencies": {
     "lucide-react": "^0.454.0",

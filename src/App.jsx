@@ -39,6 +39,7 @@ import {
   Sparkles,
   ShoppingCart,
   Sun,
+  Tag,
   Trash2,
   Wheat,
   X,
@@ -90,133 +91,133 @@ export const DEPARTMENT_INDEX = Object.fromEntries(DEPARTMENTS.map((entry) => [e
 
 export const CATALOG = [
   // ---- Fresh Produce ----
-  { id: 'organic-apples', name: 'Organic Apples', category: 'produce', price: 4.29, unit: 'lb', brand: 'Orchard Crate', isOrganic: true, inStock: true, season: ['summer', 'fall'], substitutes: ['Strawberries'] },
-  { id: 'bananas', name: 'Bananas', category: 'produce', price: 1.89, unit: 'lb', brand: 'Tropicana Farms', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'red-onions', name: 'Red Onions', category: 'produce', price: 2.49, unit: 'lb', brand: 'Field & Vine', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'roma-tomatoes', name: 'Roma Tomatoes', category: 'produce', price: 3.29, unit: 'lb', brand: 'Sunny Acres', isOrganic: false, inStock: true, season: ['summer'], substitutes: ['Roma Tomatoes'] },
-  { id: 'baby-spinach', name: 'Baby Spinach', category: 'produce', price: 3.49, unit: 'bag', brand: 'GreenLeaf Co.', isOrganic: true, inStock: true, season: ['spring', 'fall'], substitutes: ['Kale Bunches'] },
-  { id: 'kale-bunches', name: 'Kale Bunches', category: 'produce', price: 2.99, unit: 'bunch', brand: 'GreenLeaf Co.', isOrganic: true, inStock: true, season: ['fall', 'winter'], substitutes: ['Baby Spinach'] },
-  { id: 'hass-avocados', name: 'Hass Avocados', category: 'produce', price: 5.49, unit: 'bag', brand: 'Verde Grove', isOrganic: false, inStock: true, season: ['spring', 'summer'], substitutes: [] },
-  { id: 'strawberries', name: 'Strawberries', category: 'produce', price: 4.99, unit: 'pack', brand: 'Berry Patch', isOrganic: true, inStock: true, season: ['spring', 'summer'], substitutes: ['Organic Apples'] },
-  { id: 'lemons', name: 'Lemons', category: 'produce', price: 3.79, unit: 'bag', brand: 'Citrus Grove', isOrganic: false, inStock: true, season: ['winter', 'spring'], substitutes: [] },
-  { id: 'carrots', name: 'Carrots', category: 'produce', price: 2.29, unit: 'bag', brand: 'Root Cellar', isOrganic: true, inStock: true, season: ['all'], substitutes: [] },
+  { id: 'organic-apples', name: 'Organic Apples', category: 'produce', price: 4.29, unit: 'lb', brand: 'Orchard Crate', size: '3 lb bag', isOrganic: true, inStock: true, onSale: true, salePrice: 3.49, season: ['summer', 'fall'], substitutes: ['Strawberries'] },
+  { id: 'bananas', name: 'Bananas', category: 'produce', price: 1.89, unit: 'lb', brand: 'Tropicana Farms', size: '1 lb', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'red-onions', name: 'Red Onions', category: 'produce', price: 2.49, unit: 'lb', brand: 'Field & Vine', size: '2 lb bag', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'roma-tomatoes', name: 'Roma Tomatoes', category: 'produce', price: 3.29, unit: 'lb', brand: 'Sunny Acres', size: '1 lb', isOrganic: false, inStock: true, onSale: true, salePrice: 2.49, season: ['summer'], substitutes: [] },
+  { id: 'baby-spinach', name: 'Baby Spinach', category: 'produce', price: 3.49, unit: 'bag', brand: 'GreenLeaf Co.', size: '5 oz bag', isOrganic: true, inStock: true, onSale: false, salePrice: null, season: ['spring', 'fall'], substitutes: ['Kale Bunches'] },
+  { id: 'kale-bunches', name: 'Kale Bunches', category: 'produce', price: 2.99, unit: 'bunch', brand: 'GreenLeaf Co.', size: '1 bunch', isOrganic: true, inStock: true, onSale: false, salePrice: null, season: ['fall', 'winter'], substitutes: ['Baby Spinach'] },
+  { id: 'hass-avocados', name: 'Hass Avocados', category: 'produce', price: 5.49, unit: 'bag', brand: 'Verde Grove', size: '4 ct bag', isOrganic: false, inStock: true, onSale: true, salePrice: 3.99, season: ['spring', 'summer'], substitutes: [] },
+  { id: 'strawberries', name: 'Strawberries', category: 'produce', price: 4.99, unit: 'pack', brand: 'Berry Patch', size: '16 oz pack', isOrganic: true, inStock: true, onSale: false, salePrice: null, season: ['spring', 'summer'], substitutes: ['Organic Apples'] },
+  { id: 'lemons', name: 'Lemons', category: 'produce', price: 3.79, unit: 'bag', brand: 'Citrus Grove', size: '2 lb bag', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['winter', 'spring'], substitutes: [] },
+  { id: 'carrots', name: 'Carrots', category: 'produce', price: 2.29, unit: 'bag', brand: 'Root Cellar', size: '1 lb bag', isOrganic: true, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
 
   // ---- Dairy & Eggs ----
-  { id: 'whole-milk', name: 'Whole Milk', category: 'dairy-eggs', price: 3.29, unit: 'carton', brand: 'Meadow Fresh', isOrganic: false, inStock: true, season: ['all'], substitutes: ['Oat Milk', 'Almond Milk'] },
-  { id: 'oat-milk', name: 'Oat Milk', category: 'dairy-eggs', price: 4.49, unit: 'carton', brand: 'PureHarvest', isOrganic: true, inStock: true, season: ['all'], substitutes: ['Almond Milk'] },
-  { id: 'almond-milk', name: 'Almond Milk', category: 'dairy-eggs', price: 4.19, unit: 'carton', brand: 'NutBloom', isOrganic: true, inStock: true, season: ['all'], substitutes: ['Oat Milk'] },
-  { id: 'greek-yogurt', name: 'Greek Yogurt', category: 'dairy-eggs', price: 4.79, unit: 'tub', brand: 'Olympus Dairy', isOrganic: false, inStock: true, season: ['all'], substitutes: ['Cottage Cheese'] },
-  { id: 'cheddar-cheese', name: 'Cheddar Cheese', category: 'dairy-eggs', price: 5.29, unit: 'block', brand: 'Golden Rind', isOrganic: false, inStock: true, season: ['all'], substitutes: ['Mozzarella'] },
-  { id: 'mozzarella', name: 'Mozzarella', category: 'dairy-eggs', price: 4.99, unit: 'pack', brand: 'Bella Italia', isOrganic: false, inStock: true, season: ['all'], substitutes: ['Cheddar Cheese'] },
-  { id: 'free-range-eggs', name: 'Free-Range Eggs', category: 'dairy-eggs', price: 4.49, unit: 'dozen', brand: 'Happy Hen', isOrganic: true, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'butter', name: 'Butter', category: 'dairy-eggs', price: 3.99, unit: 'pack', brand: 'Meadow Fresh', isOrganic: false, inStock: true, season: ['all'], substitutes: ['Extra Virgin Olive Oil'] },
-  { id: 'heavy-cream', name: 'Heavy Cream', category: 'dairy-eggs', price: 3.49, unit: 'carton', brand: 'Meadow Fresh', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'cottage-cheese', name: 'Cottage Cheese', category: 'dairy-eggs', price: 3.89, unit: 'tub', brand: 'Olympus Dairy', isOrganic: false, inStock: true, season: ['all'], substitutes: ['Greek Yogurt'] },
+  { id: 'whole-milk', name: 'Whole Milk', category: 'dairy-eggs', price: 3.29, unit: 'carton', brand: 'Meadow Fresh', size: '1 gallon', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: ['Oat Milk', 'Almond Milk'] },
+  { id: 'oat-milk', name: 'Oat Milk', category: 'dairy-eggs', price: 4.49, unit: 'carton', brand: 'PureHarvest', size: '32 oz carton', isOrganic: true, inStock: true, onSale: true, salePrice: 3.49, season: ['all'], substitutes: ['Almond Milk'] },
+  { id: 'almond-milk', name: 'Almond Milk', category: 'dairy-eggs', price: 4.19, unit: 'carton', brand: 'NutBloom', size: '32 oz carton', isOrganic: true, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: ['Oat Milk'] },
+  { id: 'greek-yogurt', name: 'Greek Yogurt', category: 'dairy-eggs', price: 4.79, unit: 'tub', brand: 'Olympus Dairy', size: '32 oz tub', isOrganic: false, inStock: true, onSale: true, salePrice: 3.79, season: ['all'], substitutes: ['Cottage Cheese'] },
+  { id: 'cheddar-cheese', name: 'Cheddar Cheese', category: 'dairy-eggs', price: 5.29, unit: 'block', brand: 'Golden Rind', size: '8 oz block', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: ['Mozzarella'] },
+  { id: 'mozzarella', name: 'Mozzarella', category: 'dairy-eggs', price: 4.99, unit: 'pack', brand: 'Bella Italia', size: '8 oz pack', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: ['Cheddar Cheese'] },
+  { id: 'free-range-eggs', name: 'Free-Range Eggs', category: 'dairy-eggs', price: 4.49, unit: 'dozen', brand: 'Happy Hen', size: '12 ct', isOrganic: true, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'butter', name: 'Butter', category: 'dairy-eggs', price: 3.99, unit: 'pack', brand: 'Meadow Fresh', size: '16 oz pack', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: ['Extra Virgin Olive Oil'] },
+  { id: 'heavy-cream', name: 'Heavy Cream', category: 'dairy-eggs', price: 3.49, unit: 'carton', brand: 'Meadow Fresh', size: '16 oz carton', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'cottage-cheese', name: 'Cottage Cheese', category: 'dairy-eggs', price: 3.89, unit: 'tub', brand: 'Olympus Dairy', size: '16 oz tub', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: ['Greek Yogurt'] },
 
   // ---- Meat & Seafood ----
-  { id: 'chicken-breast', name: 'Chicken Breast', category: 'meat-seafood', price: 7.99, unit: 'lb', brand: 'Prairie Poultry', isOrganic: false, inStock: true, season: ['all'], substitutes: ['Turkey Slices'] },
-  { id: 'ground-beef', name: 'Ground Beef', category: 'meat-seafood', price: 6.49, unit: 'lb', brand: 'Ranch Reserve', isOrganic: false, inStock: true, season: ['all'], substitutes: ['Ground Turkey'] },
-  { id: 'ground-turkey', name: 'Ground Turkey', category: 'meat-seafood', price: 5.99, unit: 'lb', brand: 'Prairie Poultry', isOrganic: false, inStock: true, season: ['all'], substitutes: ['Ground Beef'] },
-  { id: 'salmon-fillet', name: 'Salmon Fillet', category: 'meat-seafood', price: 11.99, unit: 'lb', brand: 'North Catch', isOrganic: false, inStock: true, season: ['spring', 'summer'], substitutes: ['Tuna Steaks'] },
-  { id: 'shrimp', name: 'Shrimp', category: 'meat-seafood', price: 9.99, unit: 'lb', brand: 'North Catch', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'turkey-slices', name: 'Turkey Slices', category: 'meat-seafood', price: 5.49, unit: 'pack', brand: 'Deli Prime', isOrganic: false, inStock: true, season: ['all'], substitutes: ['Chicken Breast'] },
-  { id: 'pork-chops', name: 'Pork Chops', category: 'meat-seafood', price: 6.99, unit: 'lb', brand: 'Ranch Reserve', isOrganic: false, inStock: false, season: ['fall', 'winter'], substitutes: ['Chicken Breast'] },
-  { id: 'bacon', name: 'Bacon', category: 'meat-seafood', price: 6.29, unit: 'pack', brand: 'Smokehouse Co.', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'tuna-steaks', name: 'Tuna Steaks', category: 'meat-seafood', price: 10.49, unit: 'lb', brand: 'North Catch', isOrganic: false, inStock: true, season: ['summer'], substitutes: ['Salmon Fillet'] },
+  { id: 'chicken-breast', name: 'Chicken Breast', category: 'meat-seafood', price: 7.99, unit: 'lb', brand: 'Prairie Poultry', size: '1 lb', isOrganic: false, inStock: true, onSale: true, salePrice: 5.99, season: ['all'], substitutes: ['Turkey Slices'] },
+  { id: 'ground-beef', name: 'Ground Beef', category: 'meat-seafood', price: 6.49, unit: 'lb', brand: 'Ranch Reserve', size: '1 lb', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: ['Ground Turkey'] },
+  { id: 'ground-turkey', name: 'Ground Turkey', category: 'meat-seafood', price: 5.99, unit: 'lb', brand: 'Prairie Poultry', size: '1 lb', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: ['Ground Beef'] },
+  { id: 'salmon-fillet', name: 'Salmon Fillet', category: 'meat-seafood', price: 11.99, unit: 'lb', brand: 'North Catch', size: '1 lb', isOrganic: false, inStock: true, onSale: true, salePrice: 8.99, season: ['spring', 'summer'], substitutes: ['Tuna Steaks'] },
+  { id: 'shrimp', name: 'Shrimp', category: 'meat-seafood', price: 9.99, unit: 'lb', brand: 'North Catch', size: '1 lb', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'turkey-slices', name: 'Turkey Slices', category: 'meat-seafood', price: 5.49, unit: 'pack', brand: 'Deli Prime', size: '8 oz pack', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: ['Chicken Breast'] },
+  { id: 'pork-chops', name: 'Pork Chops', category: 'meat-seafood', price: 6.99, unit: 'lb', brand: 'Ranch Reserve', size: '1 lb', isOrganic: false, inStock: false, onSale: false, salePrice: null, season: ['fall', 'winter'], substitutes: ['Chicken Breast'] },
+  { id: 'bacon', name: 'Bacon', category: 'meat-seafood', price: 6.29, unit: 'pack', brand: 'Smokehouse Co.', size: '12 oz pack', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'tuna-steaks', name: 'Tuna Steaks', category: 'meat-seafood', price: 10.49, unit: 'lb', brand: 'North Catch', size: '1 lb', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['summer'], substitutes: ['Salmon Fillet'] },
 
   // ---- Bakery & Bread ----
-  { id: 'whole-wheat-bread', name: 'Whole Wheat Bread', category: 'bakery', price: 3.49, unit: 'loaf', brand: 'Hearth & Grain', isOrganic: true, inStock: true, season: ['all'], substitutes: ['Sourdough Loaf'] },
-  { id: 'sourdough-loaf', name: 'Sourdough Loaf', category: 'bakery', price: 4.99, unit: 'loaf', brand: 'Hearth & Grain', isOrganic: false, inStock: true, season: ['all'], substitutes: ['Whole Wheat Bread'] },
-  { id: 'bagels', name: 'Bagels', category: 'bakery', price: 3.99, unit: 'pack', brand: 'City Bakehouse', isOrganic: false, inStock: true, season: ['all'], substitutes: ['Hamburger Buns'] },
-  { id: 'butter-croissants', name: 'Butter Croissants', category: 'bakery', price: 5.49, unit: 'pack', brand: 'Petit Four', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'flour-tortillas', name: 'Flour Tortillas', category: 'bakery', price: 2.99, unit: 'pack', brand: 'Casa Blanca', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'hamburger-buns', name: 'Hamburger Buns', category: 'bakery', price: 3.29, unit: 'pack', brand: 'City Bakehouse', isOrganic: false, inStock: true, season: ['summer'], substitutes: ['Bagels'] },
-  { id: 'french-baguette', name: 'French Baguette', category: 'bakery', price: 2.79, unit: 'loaf', brand: 'Petit Four', isOrganic: false, inStock: true, season: ['all'], substitutes: ['Sourdough Loaf'] },
-  { id: 'blueberry-muffins', name: 'Blueberry Muffins', category: 'bakery', price: 4.79, unit: 'pack', brand: 'City Bakehouse', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'rye-bread', name: 'Rye Bread', category: 'bakery', price: 3.79, unit: 'loaf', brand: 'Hearth & Grain', isOrganic: false, inStock: true, season: ['all'], substitutes: ['Whole Wheat Bread'] },
+  { id: 'whole-wheat-bread', name: 'Whole Wheat Bread', category: 'bakery', price: 3.49, unit: 'loaf', brand: 'Hearth & Grain', size: '20 oz loaf', isOrganic: true, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: ['Sourdough Loaf'] },
+  { id: 'sourdough-loaf', name: 'Sourdough Loaf', category: 'bakery', price: 4.99, unit: 'loaf', brand: 'Hearth & Grain', size: '24 oz loaf', isOrganic: false, inStock: true, onSale: true, salePrice: 3.49, season: ['all'], substitutes: ['Whole Wheat Bread'] },
+  { id: 'bagels', name: 'Bagels', category: 'bakery', price: 3.99, unit: 'pack', brand: 'City Bakehouse', size: '6 ct pack', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: ['Hamburger Buns'] },
+  { id: 'butter-croissants', name: 'Butter Croissants', category: 'bakery', price: 5.49, unit: 'pack', brand: 'Petit Four', size: '4 ct pack', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'flour-tortillas', name: 'Flour Tortillas', category: 'bakery', price: 2.99, unit: 'pack', brand: 'Casa Blanca', size: '10 ct pack', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'hamburger-buns', name: 'Hamburger Buns', category: 'bakery', price: 3.29, unit: 'pack', brand: 'City Bakehouse', size: '8 ct pack', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['summer'], substitutes: ['Bagels'] },
+  { id: 'french-baguette', name: 'French Baguette', category: 'bakery', price: 2.79, unit: 'loaf', brand: 'Petit Four', size: '10 oz loaf', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: ['Sourdough Loaf'] },
+  { id: 'blueberry-muffins', name: 'Blueberry Muffins', category: 'bakery', price: 4.79, unit: 'pack', brand: 'City Bakehouse', size: '4 ct pack', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'rye-bread', name: 'Rye Bread', category: 'bakery', price: 3.79, unit: 'loaf', brand: 'Hearth & Grain', size: '16 oz loaf', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: ['Whole Wheat Bread'] },
 
   // ---- Pantry Staples ----
-  { id: 'spaghetti-pasta', name: 'Spaghetti Pasta', category: 'pantry', price: 1.99, unit: 'box', brand: 'Bella Italia', isOrganic: false, inStock: true, season: ['all'], substitutes: ['Quinoa'] },
-  { id: 'basmati-rice', name: 'Basmati Rice', category: 'pantry', price: 6.99, unit: 'bag', brand: 'Golden Harvest', isOrganic: false, inStock: true, season: ['all'], substitutes: ['Quinoa'] },
-  { id: 'extra-virgin-olive-oil', name: 'Extra Virgin Olive Oil', category: 'pantry', price: 9.49, unit: 'bottle', brand: 'Oliveto', isOrganic: true, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'peanut-butter', name: 'Peanut Butter', category: 'pantry', price: 3.99, unit: 'jar', brand: 'NutHouse', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'all-purpose-flour', name: 'All-Purpose Flour', category: 'pantry', price: 3.49, unit: 'bag', brand: 'Mill & Main', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'canned-black-beans', name: 'Canned Black Beans', category: 'pantry', price: 1.29, unit: 'can', brand: 'Casa Blanca', isOrganic: true, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'wildflower-honey', name: 'Wildflower Honey', category: 'pantry', price: 6.49, unit: 'jar', brand: 'Meadow Bee', isOrganic: true, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'soy-sauce', name: 'Soy Sauce', category: 'pantry', price: 2.99, unit: 'bottle', brand: 'Umami Works', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'quinoa', name: 'Quinoa', category: 'pantry', price: 5.99, unit: 'box', brand: 'Golden Harvest', isOrganic: true, inStock: true, season: ['all'], substitutes: ['Basmati Rice'] },
-  { id: 'tomato-sauce', name: 'Tomato Sauce', category: 'pantry', price: 1.79, unit: 'jar', brand: 'Bella Italia', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
+  { id: 'spaghetti-pasta', name: 'Spaghetti Pasta', category: 'pantry', price: 1.99, unit: 'box', brand: 'Bella Italia', size: '500g box', isOrganic: false, inStock: true, onSale: true, salePrice: 1.29, season: ['all'], substitutes: ['Quinoa'] },
+  { id: 'basmati-rice', name: 'Basmati Rice', category: 'pantry', price: 6.99, unit: 'bag', brand: 'Golden Harvest', size: '5 lb bag', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: ['Quinoa'] },
+  { id: 'extra-virgin-olive-oil', name: 'Extra Virgin Olive Oil', category: 'pantry', price: 9.49, unit: 'bottle', brand: 'Oliveto', size: '500ml bottle', isOrganic: true, inStock: true, onSale: true, salePrice: 6.99, season: ['all'], substitutes: [] },
+  { id: 'peanut-butter', name: 'Peanut Butter', category: 'pantry', price: 3.99, unit: 'jar', brand: 'NutHouse', size: '16 oz jar', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'all-purpose-flour', name: 'All-Purpose Flour', category: 'pantry', price: 3.49, unit: 'bag', brand: 'Mill & Main', size: '5 lb bag', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'canned-black-beans', name: 'Canned Black Beans', category: 'pantry', price: 1.29, unit: 'can', brand: 'Casa Blanca', size: '15 oz can', isOrganic: true, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'wildflower-honey', name: 'Wildflower Honey', category: 'pantry', price: 6.49, unit: 'jar', brand: 'Meadow Bee', size: '12 oz jar', isOrganic: true, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'soy-sauce', name: 'Soy Sauce', category: 'pantry', price: 2.99, unit: 'bottle', brand: 'Umami Works', size: '500ml bottle', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'quinoa', name: 'Quinoa', category: 'pantry', price: 5.99, unit: 'box', brand: 'Golden Harvest', size: '12 oz box', isOrganic: true, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: ['Basmati Rice'] },
+  { id: 'tomato-sauce', name: 'Tomato Sauce', category: 'pantry', price: 1.79, unit: 'jar', brand: 'Bella Italia', size: '24 oz jar', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
 
   // ---- Frozen Foods ----
-  { id: 'frozen-pizza', name: 'Frozen Pizza', category: 'frozen', price: 5.99, unit: 'box', brand: 'FireStone', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'vanilla-ice-cream', name: 'Vanilla Ice Cream', category: 'frozen', price: 4.99, unit: 'tub', brand: 'Churn & Co.', isOrganic: false, inStock: false, season: ['summer'], substitutes: ['Frozen Mixed Berries'] },
-  { id: 'frozen-peas', name: 'Frozen Peas', category: 'frozen', price: 2.49, unit: 'bag', brand: 'Arctic Garden', isOrganic: true, inStock: true, season: ['all'], substitutes: ['Frozen Broccoli'] },
-  { id: 'fish-sticks', name: 'Fish Sticks', category: 'frozen', price: 4.49, unit: 'box', brand: 'North Catch', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'frozen-mixed-berries', name: 'Frozen Mixed Berries', category: 'frozen', price: 5.49, unit: 'bag', brand: 'Arctic Garden', isOrganic: true, inStock: true, season: ['all'], substitutes: ['Strawberries'] },
-  { id: 'dumplings', name: 'Dumplings', category: 'frozen', price: 5.29, unit: 'pack', brand: 'Umami Works', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'waffles', name: 'Waffles', category: 'frozen', price: 3.29, unit: 'box', brand: 'Morning Crate', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'frozen-broccoli', name: 'Frozen Broccoli', category: 'frozen', price: 2.29, unit: 'bag', brand: 'Arctic Garden', isOrganic: true, inStock: true, season: ['all'], substitutes: ['Frozen Peas'] },
-  { id: 'burritos', name: 'Burritos', category: 'frozen', price: 5.79, unit: 'box', brand: 'Casa Blanca', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
+  { id: 'frozen-pizza', name: 'Frozen Pizza', category: 'frozen', price: 5.99, unit: 'box', brand: 'FireStone', size: 'large 12-inch', isOrganic: false, inStock: true, onSale: true, salePrice: 3.99, season: ['all'], substitutes: [] },
+  { id: 'vanilla-ice-cream', name: 'Vanilla Ice Cream', category: 'frozen', price: 4.99, unit: 'tub', brand: 'Churn & Co.', size: '1 pint tub', isOrganic: false, inStock: false, onSale: false, salePrice: null, season: ['summer'], substitutes: ['Frozen Mixed Berries'] },
+  { id: 'frozen-peas', name: 'Frozen Peas', category: 'frozen', price: 2.49, unit: 'bag', brand: 'Arctic Garden', size: '16 oz bag', isOrganic: true, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: ['Frozen Broccoli'] },
+  { id: 'fish-sticks', name: 'Fish Sticks', category: 'frozen', price: 4.49, unit: 'box', brand: 'North Catch', size: '24 oz box', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'frozen-mixed-berries', name: 'Frozen Mixed Berries', category: 'frozen', price: 5.49, unit: 'bag', brand: 'Arctic Garden', size: '16 oz bag', isOrganic: true, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: ['Strawberries'] },
+  { id: 'dumplings', name: 'Dumplings', category: 'frozen', price: 5.29, unit: 'pack', brand: 'Umami Works', size: '20 ct pack', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'waffles', name: 'Waffles', category: 'frozen', price: 3.29, unit: 'box', brand: 'Morning Crate', size: '10 ct box', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'frozen-broccoli', name: 'Frozen Broccoli', category: 'frozen', price: 2.29, unit: 'bag', brand: 'Arctic Garden', size: '16 oz bag', isOrganic: true, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: ['Frozen Peas'] },
+  { id: 'burritos', name: 'Burritos', category: 'frozen', price: 5.79, unit: 'box', brand: 'Casa Blanca', size: '4 ct box', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
 
   // ---- Snacks & Sweets ----
-  { id: 'potato-chips', name: 'Potato Chips', category: 'snacks', price: 3.49, unit: 'bag', brand: 'Crunch Lab', isOrganic: false, inStock: true, season: ['all'], substitutes: ['Pretzels', 'Popcorn'] },
-  { id: 'dark-chocolate', name: 'Dark Chocolate', category: 'snacks', price: 3.99, unit: 'bar', brand: 'Cacao Noir', isOrganic: true, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'granola-bars', name: 'Granola Bars', category: 'snacks', price: 4.29, unit: 'box', brand: 'Trail Crate', isOrganic: true, inStock: true, season: ['all'], substitutes: ['Trail Mix'] },
-  { id: 'pretzels', name: 'Pretzels', category: 'snacks', price: 2.99, unit: 'bag', brand: 'Crunch Lab', isOrganic: false, inStock: true, season: ['all'], substitutes: ['Potato Chips'] },
-  { id: 'cookies', name: 'Cookies', category: 'snacks', price: 3.79, unit: 'pack', brand: 'Sweet Oven', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'trail-mix', name: 'Trail Mix', category: 'snacks', price: 5.49, unit: 'bag', brand: 'Trail Crate', isOrganic: true, inStock: true, season: ['all'], substitutes: ['Granola Bars'] },
-  { id: 'gummy-bears', name: 'Gummy Bears', category: 'snacks', price: 2.49, unit: 'bag', brand: 'Sweet Oven', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'popcorn', name: 'Popcorn', category: 'snacks', price: 3.29, unit: 'box', brand: 'Crunch Lab', isOrganic: true, inStock: true, season: ['all'], substitutes: ['Potato Chips'] },
-  { id: 'salsa', name: 'Salsa', category: 'snacks', price: 3.19, unit: 'jar', brand: 'Casa Blanca', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
+  { id: 'potato-chips', name: 'Potato Chips', category: 'snacks', price: 3.49, unit: 'bag', brand: 'Crunch Lab', size: 'large 10 oz bag', isOrganic: false, inStock: true, onSale: true, salePrice: 2.49, season: ['all'], substitutes: ['Pretzels', 'Popcorn'] },
+  { id: 'dark-chocolate', name: 'Dark Chocolate', category: 'snacks', price: 3.99, unit: 'bar', brand: 'Cacao Noir', size: '3.5 oz bar', isOrganic: true, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'granola-bars', name: 'Granola Bars', category: 'snacks', price: 4.29, unit: 'box', brand: 'Trail Crate', size: '6 ct box', isOrganic: true, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: ['Trail Mix'] },
+  { id: 'pretzels', name: 'Pretzels', category: 'snacks', price: 2.99, unit: 'bag', brand: 'Crunch Lab', size: '12 oz bag', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: ['Potato Chips'] },
+  { id: 'cookies', name: 'Cookies', category: 'snacks', price: 3.79, unit: 'pack', brand: 'Sweet Oven', size: '12 ct pack', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'trail-mix', name: 'Trail Mix', category: 'snacks', price: 5.49, unit: 'bag', brand: 'Trail Crate', size: '16 oz bag', isOrganic: true, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: ['Granola Bars'] },
+  { id: 'gummy-bears', name: 'Gummy Bears', category: 'snacks', price: 2.49, unit: 'bag', brand: 'Sweet Oven', size: '8 oz bag', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'popcorn', name: 'Popcorn', category: 'snacks', price: 3.29, unit: 'box', brand: 'Crunch Lab', size: '6 ct box', isOrganic: true, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: ['Potato Chips'] },
+  { id: 'salsa', name: 'Salsa', category: 'snacks', price: 3.19, unit: 'jar', brand: 'Casa Blanca', size: '16 oz jar', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
 
   // ---- Beverages ----
-  { id: 'orange-juice', name: 'Orange Juice', category: 'beverages', price: 4.29, unit: 'bottle', brand: 'Citrus Grove', isOrganic: false, inStock: true, season: ['all'], substitutes: ['Lemonade'] },
-  { id: 'coffee-beans', name: 'Coffee Beans', category: 'beverages', price: 11.99, unit: 'bag', brand: 'Roast House', isOrganic: true, inStock: true, season: ['all'], substitutes: ['Green Tea'] },
-  { id: 'green-tea', name: 'Green Tea', category: 'beverages', price: 4.49, unit: 'box', brand: 'Leaf & Steep', isOrganic: true, inStock: true, season: ['all'], substitutes: ['Coffee Beans'] },
-  { id: 'sparkling-water', name: 'Sparkling Water', category: 'beverages', price: 3.99, unit: 'pack', brand: 'Fizz Peak', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'cola', name: 'Cola', category: 'beverages', price: 4.99, unit: 'pack', brand: 'Fizz Peak', isOrganic: false, inStock: true, season: ['all'], substitutes: ['Sparkling Water'] },
-  { id: 'coconut-water', name: 'Coconut Water', category: 'beverages', price: 3.49, unit: 'bottle', brand: 'Island Press', isOrganic: true, inStock: true, season: ['summer'], substitutes: [] },
-  { id: 'lemonade', name: 'Lemonade', category: 'beverages', price: 3.79, unit: 'bottle', brand: 'Citrus Grove', isOrganic: false, inStock: true, season: ['summer'], substitutes: ['Orange Juice'] },
-  { id: 'energy-drink', name: 'Energy Drink', category: 'beverages', price: 2.99, unit: 'can', brand: 'Volt Labs', isOrganic: false, inStock: true, season: ['all'], substitutes: ['Coffee Beans'] },
-  { id: 'kombucha', name: 'Kombucha', category: 'beverages', price: 4.29, unit: 'bottle', brand: 'Fermentary', isOrganic: true, inStock: false, season: ['all'], substitutes: ['Sparkling Water'] },
+  { id: 'orange-juice', name: 'Orange Juice', category: 'beverages', price: 4.29, unit: 'bottle', brand: 'Citrus Grove', size: '52 oz bottle', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: ['Lemonade'] },
+  { id: 'coffee-beans', name: 'Coffee Beans', category: 'beverages', price: 11.99, unit: 'bag', brand: 'Roast House', size: '12 oz bag', isOrganic: true, inStock: true, onSale: true, salePrice: 8.99, season: ['all'], substitutes: ['Green Tea'] },
+  { id: 'green-tea', name: 'Green Tea', category: 'beverages', price: 4.49, unit: 'box', brand: 'Leaf & Steep', size: '20 ct box', isOrganic: true, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: ['Coffee Beans'] },
+  { id: 'sparkling-water', name: 'Sparkling Water', category: 'beverages', price: 3.99, unit: 'pack', brand: 'Fizz Peak', size: '8 x 330ml pack', isOrganic: false, inStock: true, onSale: true, salePrice: 2.99, season: ['all'], substitutes: [] },
+  { id: 'cola', name: 'Cola', category: 'beverages', price: 4.99, unit: 'pack', brand: 'Fizz Peak', size: '6 x 500ml pack', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: ['Sparkling Water'] },
+  { id: 'coconut-water', name: 'Coconut Water', category: 'beverages', price: 3.49, unit: 'bottle', brand: 'Island Press', size: '330ml bottle', isOrganic: true, inStock: true, onSale: false, salePrice: null, season: ['summer'], substitutes: [] },
+  { id: 'lemonade', name: 'Lemonade', category: 'beverages', price: 3.79, unit: 'bottle', brand: 'Citrus Grove', size: '500ml bottle', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['summer'], substitutes: ['Orange Juice'] },
+  { id: 'energy-drink', name: 'Energy Drink', category: 'beverages', price: 2.99, unit: 'can', brand: 'Volt Labs', size: '250ml can', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: ['Coffee Beans'] },
+  { id: 'kombucha', name: 'Kombucha', category: 'beverages', price: 4.29, unit: 'bottle', brand: 'Fermentary', size: '350ml bottle', isOrganic: true, inStock: false, onSale: false, salePrice: null, season: ['all'], substitutes: ['Sparkling Water'] },
 
   // ---- Personal Care ----
-  { id: 'shampoo', name: 'Shampoo', category: 'personal-care', price: 6.99, unit: 'bottle', brand: 'Botanica', isOrganic: false, inStock: true, season: ['all'], substitutes: ['Body Wash'] },
-  { id: 'toothpaste', name: 'Toothpaste', category: 'personal-care', price: 3.49, unit: 'tube', brand: 'BrightSmile', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'body-wash', name: 'Body Wash', category: 'personal-care', price: 5.99, unit: 'bottle', brand: 'Botanica', isOrganic: false, inStock: true, season: ['all'], substitutes: ['Hand Soap'] },
-  { id: 'hand-soap', name: 'Hand Soap', category: 'personal-care', price: 2.99, unit: 'bottle', brand: 'Botanica', isOrganic: true, inStock: true, season: ['all'], substitutes: ['Body Wash'] },
-  { id: 'deodorant', name: 'Deodorant', category: 'personal-care', price: 4.99, unit: 'stick', brand: 'Fresh Peak', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'face-moisturizer', name: 'Face Moisturizer', category: 'personal-care', price: 12.99, unit: 'jar', brand: 'Botanica', isOrganic: true, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'sunscreen', name: 'Sunscreen', category: 'personal-care', price: 8.99, unit: 'tube', brand: 'SunGuard', isOrganic: false, inStock: true, season: ['summer'], substitutes: [] },
-  { id: 'razors', name: 'Razors', category: 'personal-care', price: 9.49, unit: 'pack', brand: 'SharpCo', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
+  { id: 'shampoo', name: 'Shampoo', category: 'personal-care', price: 6.99, unit: 'bottle', brand: 'Botanica', size: '500ml bottle', isOrganic: false, inStock: true, onSale: true, salePrice: 4.99, season: ['all'], substitutes: ['Body Wash'] },
+  { id: 'toothpaste', name: 'Toothpaste', category: 'personal-care', price: 3.49, unit: 'tube', brand: 'BrightSmile', size: '4 oz tube', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'body-wash', name: 'Body Wash', category: 'personal-care', price: 5.99, unit: 'bottle', brand: 'Botanica', size: '500ml bottle', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: ['Hand Soap'] },
+  { id: 'hand-soap', name: 'Hand Soap', category: 'personal-care', price: 2.99, unit: 'bottle', brand: 'Botanica', size: '250ml bottle', isOrganic: true, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: ['Body Wash'] },
+  { id: 'deodorant', name: 'Deodorant', category: 'personal-care', price: 4.99, unit: 'stick', brand: 'Fresh Peak', size: '2.5 oz stick', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'face-moisturizer', name: 'Face Moisturizer', category: 'personal-care', price: 12.99, unit: 'jar', brand: 'Botanica', size: '1.7 oz jar', isOrganic: true, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'sunscreen', name: 'Sunscreen', category: 'personal-care', price: 8.99, unit: 'tube', brand: 'SunGuard', size: '3 oz tube', isOrganic: false, inStock: true, onSale: true, salePrice: 5.99, season: ['summer'], substitutes: [] },
+  { id: 'razors', name: 'Razors', category: 'personal-care', price: 9.49, unit: 'pack', brand: 'SharpCo', size: '4 ct pack', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
 
   // ---- Household Essentials ----
-  { id: 'paper-towels', name: 'Paper Towels', category: 'household', price: 7.99, unit: 'roll', brand: 'HomeSoft', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'dish-soap', name: 'Dish Soap', category: 'household', price: 3.49, unit: 'bottle', brand: 'SudsCo', isOrganic: false, inStock: true, season: ['all'], substitutes: ['All-Purpose Cleaner'] },
-  { id: 'laundry-detergent', name: 'Laundry Detergent', category: 'household', price: 11.49, unit: 'bottle', brand: 'HomeSoft', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'trash-bags', name: 'Trash Bags', category: 'household', price: 8.49, unit: 'box', brand: 'ToughSack', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'all-purpose-cleaner', name: 'All-Purpose Cleaner', category: 'household', price: 4.29, unit: 'bottle', brand: 'SudsCo', isOrganic: false, inStock: true, season: ['all'], substitutes: ['Dish Soap'] },
-  { id: 'sponges', name: 'Sponges', category: 'household', price: 2.99, unit: 'pack', brand: 'SudsCo', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'aluminum-foil', name: 'Aluminum Foil', category: 'household', price: 4.49, unit: 'roll', brand: 'WrapRight', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'light-bulbs', name: 'Light Bulbs', category: 'household', price: 6.99, unit: 'pack', brand: 'LumenWorks', isOrganic: false, inStock: false, season: ['all'], substitutes: [] },
+  { id: 'paper-towels', name: 'Paper Towels', category: 'household', price: 7.99, unit: 'roll', brand: 'HomeSoft', size: '6 roll pack', isOrganic: false, inStock: true, onSale: true, salePrice: 5.99, season: ['all'], substitutes: [] },
+  { id: 'dish-soap', name: 'Dish Soap', category: 'household', price: 3.49, unit: 'bottle', brand: 'SudsCo', size: '500ml bottle', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: ['All-Purpose Cleaner'] },
+  { id: 'laundry-detergent', name: 'Laundry Detergent', category: 'household', price: 11.49, unit: 'bottle', brand: 'HomeSoft', size: '100 oz bottle', isOrganic: false, inStock: true, onSale: true, salePrice: 8.49, season: ['all'], substitutes: [] },
+  { id: 'trash-bags', name: 'Trash Bags', category: 'household', price: 8.49, unit: 'box', brand: 'ToughSack', size: '45 ct box', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'all-purpose-cleaner', name: 'All-Purpose Cleaner', category: 'household', price: 4.29, unit: 'bottle', brand: 'SudsCo', size: '500ml bottle', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: ['Dish Soap'] },
+  { id: 'sponges', name: 'Sponges', category: 'household', price: 2.99, unit: 'pack', brand: 'SudsCo', size: '3 ct pack', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'aluminum-foil', name: 'Aluminum Foil', category: 'household', price: 4.49, unit: 'roll', brand: 'WrapRight', size: '75 ft roll', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'light-bulbs', name: 'Light Bulbs', category: 'household', price: 6.99, unit: 'pack', brand: 'LumenWorks', size: '4 ct pack', isOrganic: false, inStock: false, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
 
   // ---- Baby Care ----
-  { id: 'baby-diapers', name: 'Baby Diapers', category: 'baby', price: 12.99, unit: 'pack', brand: 'Little Cloud', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'baby-wipes', name: 'Baby Wipes', category: 'baby', price: 4.99, unit: 'pack', brand: 'Little Cloud', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'baby-formula', name: 'Baby Formula', category: 'baby', price: 18.99, unit: 'can', brand: 'NurtureLab', isOrganic: true, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'baby-shampoo', name: 'Baby Shampoo', category: 'baby', price: 5.49, unit: 'bottle', brand: 'Little Cloud', isOrganic: true, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'baby-food-puree', name: 'Baby Food Puree', category: 'baby', price: 2.49, unit: 'jar', brand: 'NurtureLab', isOrganic: true, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'diaper-rash-cream', name: 'Diaper Rash Cream', category: 'baby', price: 6.99, unit: 'tube', brand: 'Little Cloud', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'baby-lotion', name: 'Baby Lotion', category: 'baby', price: 5.99, unit: 'bottle', brand: 'Little Cloud', isOrganic: true, inStock: true, season: ['all'], substitutes: [] },
+  { id: 'baby-diapers', name: 'Baby Diapers', category: 'baby', price: 12.99, unit: 'pack', brand: 'Little Cloud', size: 'size 3, 28 ct', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'baby-wipes', name: 'Baby Wipes', category: 'baby', price: 4.99, unit: 'pack', brand: 'Little Cloud', size: '64 ct pack', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'baby-formula', name: 'Baby Formula', category: 'baby', price: 18.99, unit: 'can', brand: 'NurtureLab', size: '12.5 oz can', isOrganic: true, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'baby-shampoo', name: 'Baby Shampoo', category: 'baby', price: 5.49, unit: 'bottle', brand: 'Little Cloud', size: '250ml bottle', isOrganic: true, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'baby-food-puree', name: 'Baby Food Puree', category: 'baby', price: 2.49, unit: 'jar', brand: 'NurtureLab', size: '4 oz jar', isOrganic: true, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'diaper-rash-cream', name: 'Diaper Rash Cream', category: 'baby', price: 6.99, unit: 'tube', brand: 'Little Cloud', size: '3 oz tube', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'baby-lotion', name: 'Baby Lotion', category: 'baby', price: 5.99, unit: 'bottle', brand: 'Little Cloud', size: '250ml bottle', isOrganic: true, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
 
   // ---- Pet Supplies ----
-  { id: 'dog-kibble', name: 'Dog Kibble', category: 'pet', price: 16.99, unit: 'bag', brand: 'WildBite', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'cat-food', name: 'Cat Food', category: 'pet', price: 12.49, unit: 'bag', brand: 'WildBite', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'cat-litter', name: 'Cat Litter', category: 'pet', price: 10.99, unit: 'box', brand: 'TidyPaws', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'dog-treats', name: 'Dog Treats', category: 'pet', price: 5.99, unit: 'bag', brand: 'WildBite', isOrganic: true, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'pet-shampoo', name: 'Pet Shampoo', category: 'pet', price: 7.49, unit: 'bottle', brand: 'TidyPaws', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'fish-flakes', name: 'Fish Flakes', category: 'pet', price: 3.99, unit: 'jar', brand: 'AquaLife', isOrganic: false, inStock: true, season: ['all'], substitutes: [] },
-  { id: 'bird-seed', name: 'Bird Seed', category: 'pet', price: 6.49, unit: 'bag', brand: 'AquaLife', isOrganic: false, inStock: false, season: ['all'], substitutes: [] },
+  { id: 'dog-kibble', name: 'Dog Kibble', category: 'pet', price: 16.99, unit: 'bag', brand: 'WildBite', size: '15 lb bag', isOrganic: false, inStock: true, onSale: true, salePrice: 12.99, season: ['all'], substitutes: [] },
+  { id: 'cat-food', name: 'Cat Food', category: 'pet', price: 12.49, unit: 'bag', brand: 'WildBite', size: '7 lb bag', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'cat-litter', name: 'Cat Litter', category: 'pet', price: 10.99, unit: 'box', brand: 'TidyPaws', size: '25 lb box', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'dog-treats', name: 'Dog Treats', category: 'pet', price: 5.99, unit: 'bag', brand: 'WildBite', size: '12 oz bag', isOrganic: true, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'pet-shampoo', name: 'Pet Shampoo', category: 'pet', price: 7.49, unit: 'bottle', brand: 'TidyPaws', size: '500ml bottle', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'fish-flakes', name: 'Fish Flakes', category: 'pet', price: 3.99, unit: 'jar', brand: 'AquaLife', size: '2 oz jar', isOrganic: false, inStock: true, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
+  { id: 'bird-seed', name: 'Bird Seed', category: 'pet', price: 6.49, unit: 'bag', brand: 'AquaLife', size: '5 lb bag', isOrganic: false, inStock: false, onSale: false, salePrice: null, season: ['all'], substitutes: [] },
 ];
 
 /* ---------------------------------------------------------------------------
@@ -324,6 +325,13 @@ const ACTION_VERBS = {
     hi: ['khojo', 'खोजो', 'search karo', 'dikhao', 'दिखाओ', 'dhundo', 'ढूंढो'],
     de: ['suche', 'suchen', 'finde', 'finden', 'zeig', 'zeige'],
   },
+  update: {
+    en: ['change', 'update', 'set', 'adjust', 'make it'],
+    es: ['cambia', 'cambiar', 'ajusta', 'actualiza'],
+    fr: ['change', 'modifier', 'modifie', 'passe'],
+    hi: ['badlo', 'badal do', 'badal', 'set karo'],
+    de: ['andere', 'ändere', 'aendere', 'setze'],
+  },
   clear: {
     en: ['clear', 'empty', 'reset'],
     es: ['vaciar', 'vacia', 'vacía', 'limpia'],
@@ -392,7 +400,7 @@ export function parseIntent(rawText, lang = 'en') {
 
   // --- action detection (multi-word verbs first, across all known languages) ---
   const langs = [lang, ...Object.keys(ACTION_VERBS.add).filter((l) => l !== lang)];
-  outer: for (const action of ['clear', 'search', 'remove', 'add']) {
+  outer: for (const action of ['clear', 'search', 'remove', 'update', 'add']) {
     for (const l of langs) {
       for (const verb of ACTION_VERBS[action][l] || []) {
         const v = normalize(verb);
@@ -523,7 +531,7 @@ export function searchCatalog(rawQuery, { maxPrice = null } = {}) {
     if (organicOnly && !item.isOrganic) return null;
     if (maxPrice !== null && item.price > maxPrice) return null;
 
-    const haystackTokens = [...tokenize(item.name), ...tokenize(item.brand), tokenize(DEPARTMENT_INDEX[item.category]?.label || '')];
+    const haystackTokens = [...tokenize(item.name), ...tokenize(item.brand), ...tokenize(item.size || ''), tokenize(DEPARTMENT_INDEX[item.category]?.label || '')];
     const hay = haystackTokens.map(normalize);
     let score = 0;
     for (const rawToken of tokens) {
@@ -564,6 +572,7 @@ export const TTS_PHRASES = {
     addRestock: [(name) => `Got it, added ${name} before you run dry!`, (name) => `On it! Restocking ${name} on the list.`],
     addMulti: [() => 'Done, got all those added for ya!', () => 'Sweet, threw those on your list.'],
     remove: [(name) => `Poof! Removed ${name} from your list.`, (name) => `Got rid of ${name} for ya!`],
+    update: [(name, qty) => `Done, ${qty} ${name} it is!`, (name, qty) => `Updated — ${name} is set to ${qty}.`],
     cleared: [() => 'Fresh start — the list is cleared!', () => 'All wiped clean!'],
     notFound: [() => 'Hmm, I couldn’t find that one — try a different name?', () => 'Sorry, that didn’t match anything in the store.'],
   },
@@ -572,6 +581,7 @@ export const TTS_PHRASES = {
     addRestock: [(name) => `¡Entendido! Agregué ${name} antes de que te quedes sin nada.`, (name) => `¡Voy! Reponiendo ${name}.`],
     addMulti: [() => '¡Hecho, agregué todo!', () => '¡Genial, todo en la lista!'],
     remove: [(name) => `¡Puf! Quité ${name} de la lista.`, (name) => `${name} fuera de la lista.`],
+    update: [(name, qty) => `¡Listo! ${name} ahora son ${qty}.`, (name, qty) => `Actualizado: ${qty} de ${name}.`],
     cleared: [() => '¡Lista vaciada!', () => '¡Todo limpio!'],
     notFound: [() => 'No encontré eso, ¿puedes repetirlo?', () => 'Eso no está en la tienda.'],
   },
@@ -580,6 +590,7 @@ export const TTS_PHRASES = {
     addRestock: [(name) => `Bien joué, j'ai ajouté ${name} avant la panne sèche !`, (name) => `Je m'en occupe, je rajoute ${name}.`],
     addMulti: [() => 'Voilà, tout est ajouté !', () => 'Parfait, tout est sur la liste.'],
     remove: [(name) => `Pouf ! J'ai retiré ${name} de la liste.`, (name) => `${name}, c'est enlevé !`],
+    update: [(name, qty) => `C'est fait, ${qty} ${name} !`, (name, qty) => `Mis à jour : ${name} passe à ${qty}.`],
     cleared: [() => 'La liste est vidée !', () => 'Tout est nettoyé !'],
     notFound: [() => 'Je n’ai pas trouvé ça, tu peux reformuler ?', () => 'Ça n’existe pas en magasin.'],
   },
@@ -588,6 +599,7 @@ export const TTS_PHRASES = {
     addRestock: [(name) => `Samajh gaya, khatam hone se pehle ${name} add kar diya!`, (name) => `Ho gaya, ${name} dobara le aayenge.`],
     addMulti: [() => 'Ho gaya, sab kuch add kar diya!', () => 'Badhiya, sab list par daal diya!'],
     remove: [(name) => `Poof! ${name} list se hata diya.`, (name) => `${name} hata diya, done!`],
+    update: [(name, qty) => `Ho gaya, ${name} ab ${qty} hai!`, (name, qty) => `Update kar diya — ${qty} ${name}.`],
     cleared: [() => 'List ekdum saaf ho gayi!', () => 'Sab hata diya, fresh start!'],
     notFound: [() => 'Yeh item nahi mila, doosra naam try karein?', () => 'Maaf kijiye, woh store mein nahi hai.'],
   },
@@ -596,6 +608,7 @@ export const TTS_PHRASES = {
     addRestock: [(name) => `Verstanden, ${name} hinzugefügt, bevor alles leer ist!`, (name) => `Ich kümmere mich darum — ${name} kommt auf die Liste.`],
     addMulti: [() => 'Fertig, alles hinzugefügt!', () => 'Super, alles landet auf deiner Liste.'],
     remove: [(name) => `Puff! ${name} von der Liste entfernt.`, (name) => `${name} ist raus aus der Liste!`],
+    update: [(name, qty) => `Erledigt, ${qty} ${name}!`, (name, qty) => `Aktualisiert — ${name} ist jetzt ${qty}.`],
     cleared: [() => 'Die Liste ist leer!', () => 'Alles gelöscht!'],
     notFound: [() => 'Das habe ich nicht gefunden — sagst du es anders?', () => 'Das gibt es leider nicht im Laden.'],
   },
@@ -762,13 +775,21 @@ export function usePersistentState(key, initialValue) {
 const LOW_CONFIDENCE_THRESHOLD = 0.4;
 const RETRYABLE_SPEECH_ERRORS = new Set(['no-speech', 'network', 'audio-capture', 'language-not-supported']);
 
-export function useSpeechRecognition({ lang, fallbackLangs = null, onResult, onError, onStateChange, onLangSwitch }) {
+export function useSpeechRecognition({ lang, fallbackLangs = null, onResult, onError, onStateChange, onLangSwitch, continuous = false }) {
   const [isListening, setIsListening] = useState(false);
   const [activeLang, setActiveLang] = useState(lang);
   const recognitionRef = useRef(null);
   const retryIndexRef = useRef(0);
   const manualStopRef = useRef(false);
   const restartingRef = useRef(false);
+  const continuousRef = useRef(continuous);
+  const continuousTimerRef = useRef(null);
+
+  // Keep ref in sync so the closure in onend always sees the latest value.
+  useEffect(() => { continuousRef.current = continuous; }, [continuous]);
+
+  // Clean up the auto-restart timer on unmount.
+  useEffect(() => () => { if (continuousTimerRef.current) clearTimeout(continuousTimerRef.current); }, []);
 
   const SpeechRecognition =
     typeof window !== 'undefined'
@@ -840,7 +861,18 @@ export function useSpeechRecognition({ lang, fallbackLangs = null, onResult, onE
       recognition.onend = () => {
         if (restartingRef.current) return;
         setIsListening(false);
-        onStateChange?.((prev) => (prev === 'processing' ? 'processing' : 'idle'));
+        // If continuous mode is active and the user didn't manually stop,
+        // auto-restart after 900 ms so TTS has time to finish speaking.
+        if (continuousRef.current && !manualStopRef.current) {
+          onStateChange?.('idle');
+          continuousTimerRef.current = setTimeout(() => {
+            if (continuousRef.current && !manualStopRef.current) {
+              bootRecognition(langCode);
+            }
+          }, 900);
+          return;
+        }
+        onStateChange?.('idle');
       };
 
       recognitionRef.current = recognition;
@@ -873,6 +905,10 @@ export function useSpeechRecognition({ lang, fallbackLangs = null, onResult, onE
 
   const stop = useCallback(() => {
     manualStopRef.current = true;
+    if (continuousTimerRef.current) {
+      clearTimeout(continuousTimerRef.current);
+      continuousTimerRef.current = null;
+    }
     try {
       recognitionRef.current?.stop();
     } catch {
@@ -1387,6 +1423,7 @@ function SearchResultCard({ item, onAdd }) {
  * -------------------------------------------------------------------------*/
 
 function SuggestionChip({ item, label, onPick }) {
+  const isSale = item.onSale && typeof item.salePrice === 'number';
   return (
     <button
       type="button"
@@ -1396,21 +1433,46 @@ function SuggestionChip({ item, label, onPick }) {
       <Plus className="h-3.5 w-3.5 text-blue-500" />
       <span>
         {item.name}
-        {label && <span className="block text-[10px] font-normal text-blue-500">{label}</span>}
+        {isSale && (
+          <span className="flex items-center gap-1 text-[10px] font-semibold text-rose-600">
+            <span className="line-through text-slate-400 font-normal">{formatPrice(item.price)}</span>
+            {formatPrice(item.salePrice)}
+          </span>
+        )}
+        {!isSale && label && <span className="block text-[10px] font-normal text-blue-500">{label}</span>}
+        {isSale && label && <span className="block text-[10px] font-normal text-blue-500">{label}</span>}
       </span>
     </button>
   );
 }
 
-function SuggestionsPanel({ list, onPick }) {
+function SuggestionsPanel({ list, history, onPick }) {
   const listIds = useMemo(() => new Set(list.map((entry) => entry.id)), [list]);
   const season = currentSeason();
 
+  // Real purchase history: score by frequency (add count) and recency
+  // (days since last add), then surface the top repeat-buy candidates.
   const historyPicks = useMemo(() => {
-    const categories = new Set(list.map((entry) => entry.category));
-    if (categories.size === 0) return [];
-    return CATALOG.filter((item) => categories.has(item.category) && !listIds.has(item.id) && item.inStock).slice(0, 3);
-  }, [list, listIds]);
+    const DAY = 24 * 60 * 60 * 1000;
+    return Object.entries(history)
+      .map(([id, entry]) => {
+        const product = CATALOG.find((item) => item.id === id);
+        if (!product || !product.inStock || listIds.has(product.id)) return null;
+        const daysSince = (Date.now() - entry.lastAddedAt) / DAY;
+        const score = entry.count * 2 + Math.min(daysSince, 30) / 10;
+        const historyLabel =
+          entry.count >= 2 && daysSince >= 5
+            ? 'running low?'
+            : entry.count >= 2
+              ? 'you usually buy this'
+              : 'bought before';
+        return { product, score, historyLabel };
+      })
+      .filter(Boolean)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3)
+      .map(({ product, historyLabel }) => ({ ...product, historyLabel }));
+  }, [history, listIds]);
 
   const seasonalPicks = useMemo(
     () =>
@@ -1431,10 +1493,16 @@ function SuggestionsPanel({ list, onPick }) {
     return picks;
   }, [list, listIds]);
 
-  if (historyPicks.length + seasonalPicks.length + substitutePicks.length === 0) return null;
+  const salePicks = useMemo(
+    () => CATALOG.filter((item) => item.onSale && item.inStock && !listIds.has(item.id)).slice(0, 4),
+    [listIds],
+  );
+
+  if (historyPicks.length + seasonalPicks.length + substitutePicks.length + salePicks.length === 0) return null;
 
   const sections = [
-    { icon: History, title: 'Based on your list', items: historyPicks, label: 'frequently bought together' },
+    { icon: History, title: 'Based on your history', items: historyPicks, label: (item) => item.historyLabel },
+    { icon: Tag, title: 'On sale now', items: salePicks, label: (item) => item.onSale ? `was ${formatPrice(item.price)}` : null },
     { icon: Sun, title: `In season · ${season}`, items: seasonalPicks, label: 'fresh right now' },
     { icon: Heart, title: 'Smart substitutes', items: substitutePicks, label: 'worth a swap' },
   ].filter((section) => section.items.length > 0);
@@ -1453,7 +1521,12 @@ function SuggestionsPanel({ list, onPick }) {
           </p>
           <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
             {items.map((item) => (
-              <SuggestionChip key={`${title}-${item.id}`} item={item} label={label} onPick={onPick} />
+              <SuggestionChip
+                key={`${title}-${item.id}`}
+                item={item}
+                label={typeof label === 'function' ? label(item) : label}
+                onPick={onPick}
+              />
             ))}
           </div>
         </div>
@@ -1474,6 +1547,7 @@ const DEMO_COMMANDS = [
   'Ajouter du pain',
   'Füge Kaffee hinzu',
   'Running low on coffee beans',
+  'Set eggs to 6',
   'Remove the eggs',
 ];
 
@@ -1489,6 +1563,8 @@ function VoiceBar({
   statusText,
   inputRef,
   onDemo,
+  continuous,
+  onToggleContinuous,
 }) {
   return (
     <div className="fixed bottom-6 left-1/2 z-50 w-[calc(100%-2rem)] max-w-lg -translate-x-1/2">
@@ -1512,14 +1588,32 @@ function VoiceBar({
             <Globe className="h-3 w-3" />
             {langLabel}
           </span>
-          <span className="flex items-center gap-1.5 text-xs text-slate-400">
-            {listening && <span className="flex gap-0.5">
-              <span className="h-2.5 w-0.5 animate-pulse rounded bg-rose-500" />
-              <span className="h-3.5 w-0.5 animate-pulse rounded bg-rose-500 [animation-delay:150ms]" />
-              <span className="h-2 w-0.5 animate-pulse rounded bg-rose-500 [animation-delay:300ms]" />
-            </span>}
-            {statusText}
-          </span>
+          <div className="flex items-center gap-2">
+            {/* Continuous-listen toggle */}
+            <button
+              type="button"
+              onClick={onToggleContinuous}
+              title={continuous ? 'Continuous listening on — tap to switch to push-to-talk' : 'Push-to-talk mode — tap to enable continuous listening'}
+              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold ring-1 transition ${
+                continuous
+                  ? 'bg-emerald-50 text-emerald-700 ring-emerald-200 hover:bg-emerald-100'
+                  : 'bg-slate-100 text-slate-500 ring-slate-200 hover:bg-slate-200'
+              }`}
+              aria-pressed={continuous}
+              aria-label={continuous ? 'Disable continuous listening' : 'Enable continuous listening'}
+            >
+              <span className={`inline-block h-1.5 w-1.5 rounded-full ${continuous ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+              {continuous ? 'Continuous' : 'Push-to-talk'}
+            </button>
+            <span className="flex items-center gap-1.5 text-xs text-slate-400">
+              {listening && <span className="flex gap-0.5">
+                <span className="h-2.5 w-0.5 animate-pulse rounded bg-rose-500" />
+                <span className="h-3.5 w-0.5 animate-pulse rounded bg-rose-500 [animation-delay:150ms]" />
+                <span className="h-2 w-0.5 animate-pulse rounded bg-rose-500 [animation-delay:300ms]" />
+              </span>}
+              {statusText}
+            </span>
+          </div>
         </div>
 
         <form
@@ -1577,10 +1671,22 @@ function VoiceBar({
 function Header({ listening, supported, selectedLang, onSelectLang, view, onChangeView, itemCount, llmKey, onSaveLlmKey }) {
   const [aiOpen, setAiOpen] = useState(false);
   const [keyDraft, setKeyDraft] = useState(llmKey || '');
+  const aiRef = useRef(null);
 
   useEffect(() => {
     if (aiOpen) setKeyDraft(llmKey || '');
   }, [aiOpen, llmKey]);
+
+  useEffect(() => {
+    if (!aiOpen) return;
+    const handleClickOutside = (event) => {
+      if (aiRef.current && !aiRef.current.contains(event.target)) {
+        setAiOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [aiOpen]);
 
   return (
     <header className="sticky top-0 z-[55] border-b border-slate-100 bg-white/80 backdrop-blur-xl">
@@ -1606,7 +1712,7 @@ function Header({ listening, supported, selectedLang, onSelectLang, view, onChan
         </div>
 
         <div className="ml-auto flex items-center gap-2">
-          <div className="relative">
+          <div className="relative" ref={aiRef}>
             <button
               type="button"
               onClick={() => setAiOpen((open) => !open)}
@@ -1747,8 +1853,10 @@ export default function App() {
   });
 
   const [selectedLang, setSelectedLang] = usePersistentState('vc.lang.v1', 'auto');
+  const [continuousListen, setContinuousListen] = usePersistentState('vc.continuous.v1', false);
   const [lastDetected, setLastDetected] = usePersistentState('vc.detected.v1', 'en');
   const [llmKey, setLlmKey] = usePersistentState('vc.llm.key.v1', '');
+  const [buyHistory, setBuyHistory] = usePersistentState('vc.history.v1', {});
   const [view, setView] = useState('list');
   const [booting, setBooting] = useState(true);
   const [toasts, setToasts] = useState([]);
@@ -1757,6 +1865,8 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchMaxPrice, setSearchMaxPrice] = useState(null);
   const [searchResults, setSearchResults] = useState([]);
+  const [searchBooting, setSearchBooting] = useState(false);
+  const searchTimerRef = useRef(null);
 
   const manualInputRef = useRef(null);
   const tts = useSpeechSynthesis();
@@ -1774,15 +1884,59 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
 
+  useEffect(() => () => {
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+  }, []);
+
+  // Brief skeleton while the search "runs", then reveal results — keeps the
+  // SearchView loading state honest instead of hardcoded off.
+  const runSearch = useCallback((query, maxPrice) => {
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    setSearchBooting(true);
+    setView('search');
+    searchTimerRef.current = window.setTimeout(() => {
+      setSearchQuery(query);
+      setSearchMaxPrice(maxPrice);
+      setSearchResults(searchCatalog(query, { maxPrice }));
+      setSearchBooting(false);
+    }, 450);
+  }, []);
+
+  const toastTimersRef = useRef(new Set());
+
   const pushToast = useCallback((toast) => {
     const id = uid();
     setToasts((prev) => [...prev, { id, type: 'info', ...toast }]);
-    setTimeout(() => setToasts((prev) => prev.filter((entry) => entry.id !== id)), 4200);
+    const timer = setTimeout(() => {
+      toastTimersRef.current.delete(timer);
+      setToasts((prev) => prev.filter((entry) => entry.id !== id));
+    }, 4200);
+    toastTimersRef.current.add(timer);
   }, []);
 
   const dismissToast = useCallback((id) => {
     setToasts((prev) => prev.filter((entry) => entry.id !== id));
   }, []);
+
+  useEffect(() => {
+    const timers = toastTimersRef.current;
+    return () => {
+      timers.forEach((timer) => clearTimeout(timer));
+      timers.clear();
+    };
+  }, []);
+
+  // Purchase history: per-product add count + last-added timestamp, used
+  // for recency/frequency scoring in the Smart Suggestions panel.
+  const recordHistory = useCallback(
+    (product, quantity = 1) => {
+      setBuyHistory((prev) => {
+        const entry = prev[product.id] || { count: 0, lastAddedAt: 0 };
+        return { ...prev, [product.id]: { count: entry.count + quantity, lastAddedAt: Date.now() } };
+      });
+    },
+    [setBuyHistory],
+  );
 
   const browserShort = useMemo(() => {
     const nav = typeof navigator !== 'undefined' ? navigator.language || 'en-US' : 'en-US';
@@ -1815,6 +1969,7 @@ export default function App() {
   const addProduct = useCallback(
     (product, quantity = 1, unit = null, { lang = null, phraseCategory = 'add', silent = false, detected = null } = {}) => {
       dispatch({ type: 'ADD', product, quantity, unit });
+      recordHistory(product, quantity);
       if (silent || !lang) return;
       const sub = findSubstitute(product);
       const subNote = sub ? ` If it’s sold out, try ${sub.name}.` : '';
@@ -1826,7 +1981,7 @@ export default function App() {
       });
       tts.speak(pickPhrase(lang.short, phraseCategory, product.name, quantity), lang.code);
     },
-    [pushToast, tts],
+    [pushToast, recordHistory, tts],
   );
 
   const parseOnDevice = useCallback(
@@ -1867,6 +2022,7 @@ export default function App() {
               const results = searchCatalog(segIntent.itemName);
               if (results.length > 0) {
                 dispatch({ type: 'ADD', product: results[0], quantity: segIntent.quantity, unit: segIntent.unit !== 'pcs' ? segIntent.unit : undefined });
+                recordHistory(results[0], segIntent.quantity);
                 added.push(results[0]);
               }
             }
@@ -1929,12 +2085,28 @@ export default function App() {
           return;
         }
 
+        case 'UPDATE': {
+          const updateTarget = list.find(
+            (entry) =>
+              normalize(entry.name).includes(normalize(intent.itemName)) ||
+              normalize(intent.itemName).includes(normalize(entry.name)),
+          );
+          if (!intent.itemName || !updateTarget) {
+            pushToast({ type: 'error', title: 'Nothing to update', message: `“${intent.itemName || trimmed}” isn’t on your list.` });
+            tts.speak(pickPhrase(lang.short, 'notFound'), lang.code);
+            finish();
+            return;
+          }
+          dispatch({ type: 'SET_QTY', id: updateTarget.id, quantity: intent.quantity });
+          setView('list');
+          pushToast({ type: 'success', title: `Updated ${updateTarget.name}`, message: `Quantity set to ${intent.quantity}.`, ...langTag });
+          tts.speak(pickPhrase(lang.short, 'update', updateTarget.name, intent.quantity), lang.code);
+          finish();
+          return;
+        }
+
         case 'SEARCH': {
-          const results = searchCatalog(intent.itemName, { maxPrice: intent.maxPrice });
-          setSearchQuery(intent.itemName || trimmed);
-          setSearchMaxPrice(intent.maxPrice);
-          setSearchResults(results);
-          setView('search');
+          runSearch(intent.itemName || trimmed, intent.maxPrice);
           finish();
           return;
         }
@@ -1952,7 +2124,7 @@ export default function App() {
           notFound();
       }
     },
-    [addProduct, browserShort, lastDetected, list, pushToast, selectedLang, setLastDetected, tts],
+    [addProduct, browserShort, lastDetected, list, pushToast, recordHistory, runSearch, selectedLang, setLastDetected, tts],
   );
 
   const applyLLMResult = useCallback(
@@ -1975,6 +2147,7 @@ export default function App() {
           }
           const product = results[0];
           dispatch({ type: 'ADD', product, quantity: llm.quantity, unit: undefined });
+          recordHistory(product, llm.quantity);
           const sub = findSubstitute(product);
           const subNote = sub ? ` If it’s sold out, try ${sub.name}.` : '';
           pushToast({
@@ -2010,11 +2183,7 @@ export default function App() {
         }
 
         case 'SEARCH': {
-          const results = searchCatalog(llm.canonicalItem);
-          setSearchQuery(llm.canonicalItem);
-          setSearchMaxPrice(null);
-          setSearchResults(results);
-          setView('search');
+          runSearch(llm.canonicalItem, null);
           if (llm.replyMessage) tts.speak(llm.replyMessage, code);
           finish();
           return;
@@ -2024,7 +2193,7 @@ export default function App() {
           finish();
       }
     },
-    [list, pushToast, setLastDetected, tts],
+    [list, pushToast, recordHistory, runSearch, setLastDetected, tts],
   );
 
   const handleCommand = useCallback(
@@ -2082,14 +2251,17 @@ export default function App() {
       setVoiceState((prev) => (state === 'idle' && prev === 'processing' ? prev : state));
     },
     onLangSwitch: handleLangSwitch,
+    continuous: continuousListen,
   });
 
   const substitutesByEntry = useMemo(() => {
     const map = {};
     for (const entry of list) {
       const product = CATALOG.find((item) => item.id === entry.productId);
-      const sub = findSubstitute(product);
-      if (sub && !list.some((other) => other.id === sub.id)) map[entry.id] = sub;
+      if (product && !product.inStock) {
+        const sub = findSubstitute(product);
+        if (sub && !list.some((other) => other.id === sub.id)) map[entry.id] = sub;
+      }
     }
     return map;
   }, [list]);
@@ -2151,7 +2323,7 @@ export default function App() {
                 pushToast({ type: 'info', title: 'List cleared', message: 'Every item was removed.' });
               }}
             />
-            <SuggestionsPanel list={list} onPick={handleAddFromCatalog} />
+            <SuggestionsPanel list={list} history={buyHistory} onPick={handleAddFromCatalog} />
           </>
         ) : (
           <SearchView
@@ -2159,7 +2331,7 @@ export default function App() {
             query={searchQuery}
             maxPrice={searchMaxPrice}
             onAdd={handleAddFromCatalog}
-            booting={false}
+            booting={searchBooting}
           />
         )}
       </main>
@@ -2176,6 +2348,8 @@ export default function App() {
         statusText={statusText}
         inputRef={manualInputRef}
         onDemo={handleCommand}
+        continuous={continuousListen}
+        onToggleContinuous={() => setContinuousListen((v) => !v)}
       />
 
       <footer className="pointer-events-none fixed bottom-1 left-1/2 z-40 -translate-x-1/2 text-[10px] text-slate-400">
