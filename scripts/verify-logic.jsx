@@ -12,6 +12,7 @@ import {
   sanitizeLLMResponse,
   LLM_SYSTEM_PROMPT,
   RETRY_LANGUAGE_CHAIN,
+  singular,
   CATALOG,
   DEPARTMENTS,
 } from '../src/App.jsx';
@@ -53,11 +54,11 @@ check('EN casual add item', r.itemName, 'oat milk');
 
 r = parseIntent('Add a dozen eggs', 'en');
 check('EN dozen qty', r.quantity, 12);
-check('EN dozen item', r.itemName, 'eggs');
+check('EN dozen item', r.itemName, 'egg');
 
 r = parseIntent('Find organic apples under $5', 'en');
 check('EN search action', r.action, 'SEARCH');
-check('EN search item', r.itemName, 'organic apples');
+check('EN search item', r.itemName, 'organic apple');
 check('EN search price', r.maxPrice, 5);
 
 r = parseIntent('find dark chocolate less than 4 dollars', 'en');
@@ -65,7 +66,7 @@ check('EN price words', r.maxPrice, 4);
 
 r = parseIntent('remove the eggs', 'en');
 check('EN remove action', r.action, 'REMOVE');
-check('EN remove item', r.itemName, 'eggs');
+check('EN remove item', r.itemName, 'egg');
 
 r = parseIntent('change milk to three', 'en');
 check('EN update action', r.action, 'UPDATE');
@@ -74,7 +75,7 @@ check('EN update item', r.itemName, 'milk');
 
 r = parseIntent('set eggs to 6', 'en');
 check('EN update digit qty', r.quantity, 6);
-check('EN update digit item', r.itemName, 'eggs');
+check('EN update digit item', r.itemName, 'egg');
 
 r = parseIntent('cambia leche a dos', 'es');
 check('ES update action', r.action, 'UPDATE');
@@ -151,7 +152,48 @@ check('search respects price cap', searchCatalog('salmon', { maxPrice: 5 }).leng
 check('search organic filter excludes conventional', searchCatalog('organic spinach').every((item) => item.isOrganic), true);
 check('search brand match', searchCatalog('bella italia').some((item) => item.brand === 'Bella Italia'), true);
 check('bare "milk" resolves to Whole Milk first', searchCatalog('milk')[0]?.name, 'Whole Milk');
+check('query "pineapple" resolves to Pineapple (produce), not flavored strip snacks', searchCatalog('pineapple')[0]?.name, 'Pineapple');
+check('query "mango" resolves to Fresh Mango (produce), not flavored snacks', searchCatalog('mango')[0]?.name, 'Fresh Mango');
+check('query "banana" resolves to Bananas (produce)', searchCatalog('banana')[0]?.name, 'Bananas');
+check('query "apple" resolves to Organic Apples (produce), not tea or snacks', searchCatalog('apple')[0]?.name, 'Organic Apples');
+check('query "orange" resolves to Oranges (produce), not Orange Juice', searchCatalog('orange')[0]?.name, 'Oranges');
+check('query "orange juice" resolves to Orange Juice (beverage)', searchCatalog('orange juice')[0]?.name, 'Orange Juice');
+check('query "limes" resolves to Limes (produce)', searchCatalog('limes')[0]?.name, 'Limes');
+check('query "cucumber" resolves to Cucumber (produce)', searchCatalog('cucumber')[0]?.name, 'Cucumber');
+check('intent "add pineapple" resolves to pineapple', parseIntent('add pineapple', 'en').itemName, 'pineapple');
+check('intent "add orange" resolves to oranges item', parseIntent('add orange', 'en').itemName, 'orange');
+check('intent "add orange juice" resolves to orange juice item', parseIntent('add orange juice', 'en').itemName, 'orange juice');
+check('ES intent "agregar piña" alias resolves to pineapple', parseIntent('agregar piña', 'es').itemName, 'pineapple');
+check('ES intent "agregar naranjas" alias resolves to oranges', parseIntent('agregar naranjas', 'es').itemName, 'oranges');
+check('DE intent "orangen hinzufügen" alias resolves to oranges', parseIntent('orangen hinzufügen', 'de').itemName, 'oranges');
+check('HI intent "ananas add karo" alias resolves to pineapple', parseIntent('ananas add karo', 'hi').itemName, 'pineapple');
 check('weak EN signal still detected as en', detectLanguage('add oat milk', 'es').short, 'en');
+
+// --- Singular & plural normalization engine ---
+check('plural mangoes -> mango', singular('mangoes'), 'mango');
+check('plural tomatoes -> tomato', singular('tomatoes'), 'tomato');
+check('plural potatoes -> potato', singular('potatoes'), 'potato');
+check('plural apples -> apple', singular('apples'), 'apple');
+check('plural berries -> berry', singular('berries'), 'berry');
+check('plural strawberries -> strawberry', singular('strawberries'), 'strawberry');
+check('plural eggs -> egg', singular('eggs'), 'egg');
+check('plural cookies -> cookie', singular('cookies'), 'cookie');
+check('plural peaches -> peach', singular('peaches'), 'peach');
+check('plural loaves -> loaf', singular('loaves'), 'loaf');
+check('non-plural ending in s hummus preserved', singular('hummus'), 'hummus');
+check('non-plural ending in s asparagus preserved', singular('asparagus'), 'asparagus');
+check('non-plural ending in s citrus preserved', singular('citrus'), 'citrus');
+check('non-plural ending in s hass preserved', singular('hass'), 'hass');
+
+// --- Search with plural and synonym variations ---
+check('search "mangoes" returns Fresh Mango #1', searchCatalog('mangoes')[0]?.name, 'Fresh Mango');
+check('search "tomatoes" returns Roma Tomatoes #1', searchCatalog('tomatoes')[0]?.name, 'Roma Tomatoes');
+check('search "potatoes" returns Russet Potatoes #1', searchCatalog('potatoes')[0]?.name, 'Russet Potatoes');
+check('search "strawberries" returns Strawberries #1', searchCatalog('strawberries')[0]?.name, 'Strawberries');
+check('intent "add mangoes" normalizes item to mango', parseIntent('add two mangoes', 'en').itemName, 'mango');
+check('intent "add tomatoes" normalizes item to tomato', parseIntent('add tomatoes', 'en').itemName, 'tomato');
+check('intent "add spuds" alias resolves to potatoes', parseIntent('add spuds', 'en').itemName, 'potatoes');
+check('intent "add veggies" alias resolves to vegetables', parseIntent('add veggies', 'en').itemName, 'vegetables');
 
 const wholeMilk = CATALOG.find((item) => item.id === 'whole-milk');
 const sub = findSubstitute(wholeMilk);

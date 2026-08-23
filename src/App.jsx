@@ -90,6 +90,15 @@ export const DEPARTMENT_INDEX = Object.fromEntries(DEPARTMENTS.map((entry) => [e
  * -------------------------------------------------------------------------*/
 
 export const CATALOG = [
+  {"id":"pineapple","name":"Pineapple","category":"produce","price":3.99,"unit":"pcs","brand":"Tropicana Farms","size":"1 ct","isOrganic":false,"inStock":true,"onSale":false,"salePrice":null,"season":["spring","summer"],"substitutes":[]},
+  {"id":"mango","name":"Fresh Mango","category":"produce","price":1.99,"unit":"pcs","brand":"Tropicana Farms","size":"1 ct","isOrganic":false,"inStock":true,"onSale":false,"salePrice":null,"season":["summer"],"substitutes":[]},
+  {"id":"limes","name":"Limes","category":"produce","price":2.49,"unit":"bag","brand":"Citrus Grove","size":"1 lb bag","isOrganic":false,"inStock":true,"onSale":false,"salePrice":null,"season":["summer","all"],"substitutes":["Lemons"]},
+  {"id":"peaches","name":"Fresh Peaches","category":"produce","price":3.79,"unit":"lb","brand":"Orchard Crate","size":"2 lb bag","isOrganic":false,"inStock":true,"onSale":false,"salePrice":null,"season":["summer"],"substitutes":[]},
+  {"id":"watermelon","name":"Watermelon","category":"produce","price":5.99,"unit":"pcs","brand":"Sunny Acres","size":"1 whole melon","isOrganic":false,"inStock":true,"onSale":true,"salePrice":4.49,"season":["summer"],"substitutes":[]},
+  {"id":"garlic","name":"Fresh Garlic","category":"produce","price":1.49,"unit":"pack","brand":"Root Cellar","size":"3 ct sleeve","isOrganic":false,"inStock":true,"onSale":false,"salePrice":null,"season":["all"],"substitutes":[]},
+  {"id":"cucumber","name":"Cucumber","category":"produce","price":1.29,"unit":"pcs","brand":"GreenLeaf Co.","size":"1 ct","isOrganic":false,"inStock":true,"onSale":false,"salePrice":null,"season":["spring","summer"],"substitutes":[]},
+  {"id":"potatoes","name":"Russet Potatoes","category":"produce","price":3.99,"unit":"bag","brand":"Root Cellar","size":"5 lb bag","isOrganic":false,"inStock":true,"onSale":false,"salePrice":null,"season":["all"],"substitutes":[]},
+  {"id":"oranges","name":"Oranges","category":"produce","price":3.49,"unit":"lb","brand":"Citrus Grove","size":"3 lb bag","isOrganic":false,"inStock":true,"onSale":false,"salePrice":null,"season":["winter","spring"],"substitutes":[]},
   {"id":"organic-apples","name":"Organic Apples","category":"produce","price":4.29,"unit":"lb","brand":"Orchard Crate","size":"3 lb bag","isOrganic":true,"inStock":true,"onSale":true,"salePrice":3.49,"season":["summer","fall"],"substitutes":["Strawberries"]},
   {"id":"bananas","name":"Bananas","category":"produce","price":1.89,"unit":"lb","brand":"Tropicana Farms","size":"1 lb","isOrganic":false,"inStock":true,"onSale":false,"salePrice":null,"season":["all"],"substitutes":[]},
   {"id":"red-onions","name":"Red Onions","category":"produce","price":2.49,"unit":"lb","brand":"Field & Vine","size":"2 lb bag","isOrganic":false,"inStock":true,"onSale":false,"salePrice":null,"season":["all"],"substitutes":[]},
@@ -457,7 +466,108 @@ export const CATALOG = [
  * Keys are pre-normalized (lowercase, accents stripped). Devanagari is kept.
  * -------------------------------------------------------------------------*/
 
+export const IRREGULAR_PLURALS = {
+  mangoes: 'mango',
+  mangos: 'mango',
+  tomatoes: 'tomato',
+  potatoes: 'potato',
+  berries: 'berry',
+  strawberries: 'strawberry',
+  blueberries: 'blueberry',
+  raspberries: 'raspberry',
+  blackberries: 'blackberry',
+  cranberries: 'cranberry',
+  cherries: 'cherry',
+  cookies: 'cookie',
+  loaves: 'loaf',
+  halves: 'half',
+  calves: 'calf',
+  leaves: 'leaf',
+  radishes: 'radish',
+  bunches: 'bunch',
+  sandwiches: 'sandwich',
+  peaches: 'peach',
+  boxes: 'box',
+  pouches: 'pouch',
+  dishes: 'dish',
+  glasses: 'glass',
+};
+
+export const SINGULAR_EXCEPTIONS = new Set([
+  'hummus',
+  'asparagus',
+  'citrus',
+  'couscous',
+  'hibiscus',
+  'lotus',
+  'grass',
+  'hass',
+  'boneless',
+  'flourless',
+  'guiltless',
+  'delicious',
+  'radius',
+  'walrus',
+  'status',
+  'plus',
+  'minus',
+  'canvas',
+  'basis',
+  'crisis',
+  'tapas',
+]);
+
+export function singular(word, lang = 'en') {
+  const n = normalize(word);
+  if (!n || n.length <= 2) return n;
+
+  if (SINGULAR_EXCEPTIONS.has(n)) return n;
+  if (IRREGULAR_PLURALS[n]) return IRREGULAR_PLURALS[n];
+
+  // Spanish plural rules (-ces -> z, -es, -s)
+  if (lang === 'es') {
+    if (n.endsWith('ces') && n.length > 4) return `${n.slice(0, -3)}z`;
+    if (n.endsWith('es') && n.length > 4) return n.slice(0, -2);
+    if (n.endsWith('s') && !n.endsWith('ss') && n.length > 3) return n.slice(0, -1);
+    return n;
+  }
+
+  // French plural rules (-aux -> al, -eaux -> eau, -s -> drop)
+  if (lang === 'fr') {
+    if (n.endsWith('aux') && n.length > 4) return `${n.slice(0, -3)}al`;
+    if (n.endsWith('eaux') && n.length > 5) return n.slice(0, -1);
+    if (n.endsWith('s') && !n.endsWith('ss') && n.length > 3) return n.slice(0, -1);
+    return n;
+  }
+
+  // German plural rules (-en, -n, -s)
+  if (lang === 'de') {
+    if (n.endsWith('innen') && n.length > 6) return n.slice(0, -3);
+    if (n.endsWith('en') && n.length > 4) return n.slice(0, -2);
+    if (n.endsWith('n') && n.length > 4 && /[aeiou]n$/.test(n)) return n.slice(0, -1);
+    if (n.endsWith('s') && n.length > 3) return n.slice(0, -1);
+    return n;
+  }
+
+  // English general suffix rules
+  if (n.endsWith('ies') && n.length > 4) return `${n.slice(0, -3)}y`;
+  if (n.endsWith('ves') && n.length > 4) return `${n.slice(0, -3)}f`;
+  if (/(?:ches|shes|sses|axes|oxes|ixes)$/.test(n) && n.length > 4) return n.slice(0, -2);
+  if (n.endsWith('oes') && n.length > 4) return n.slice(0, -2);
+  if (n.endsWith('s') && !n.endsWith('ss') && !n.endsWith('us') && !n.endsWith('is') && n.length > 3) {
+    return n.slice(0, -1);
+  }
+
+  return n;
+}
+
 const ALIASES = {
+  en: {
+    veggies: 'vegetables', veggie: 'vegetables', greens: 'spinach',
+    soda: 'soft drink', pop: 'soft drink', cola: 'soda',
+    spuds: 'potatoes', taters: 'potatoes', oj: 'orange juice',
+    pb: 'peanut butter', evoo: 'olive oil',
+  },
   es: {
     leche: 'milk', pan: 'bread', huevos: 'eggs', huevo: 'eggs', manzanas: 'apples', manzana: 'apples',
     arroz: 'rice', queso: 'cheese', pollo: 'chicken', mantequilla: 'butter', yogur: 'yogurt',
@@ -466,6 +576,8 @@ const ALIASES = {
     pasta: 'pasta', salmon: 'salmon', helado: 'ice cream', aceite: 'olive oil', miel: 'honey',
     te: 'tea', avena: 'oat milk', tocino: 'bacon', camarones: 'shrimp', espinaca: 'spinach',
     zanahorias: 'carrots', limones: 'lemons', aguacate: 'avocados', aguacates: 'avocados',
+    naranja: 'oranges', naranjas: 'oranges', pina: 'pineapple', pinas: 'pineapple', 'piña': 'pineapple',
+    mango: 'mango', mangos: 'mango',
     ajo: 'garlic', papas: 'potatoes', papa: 'potatoes', uvas: 'grapes', pepino: 'cucumber',
     azucar: 'sugar', sopa: 'soup', cereal: 'cereal', jabon: 'soap', papitas: 'chips',
     champinones: 'mushrooms', atun: 'tuna',
@@ -478,6 +590,7 @@ const ALIASES = {
     pates: 'pasta', saumon: 'salmon', glace: 'ice cream', huile: 'olive oil', miel: 'honey',
     the: 'tea', 'lait davoine': 'oat milk', bacon: 'bacon', crevettes: 'shrimp', epinards: 'spinach',
     carottes: 'carrots', citrons: 'lemons', avocat: 'avocados', avocats: 'avocados',
+    orange: 'oranges', oranges: 'oranges', ananas: 'pineapple', mangue: 'mango',
     ail: 'garlic', 'pommes de terre': 'potatoes', raisins: 'grapes', concombre: 'cucumber',
     sucre: 'sugar', soupe: 'soup', cereales: 'cereal', savon: 'soap', chips: 'chips',
     champignons: 'mushrooms', thon: 'tuna',
@@ -491,6 +604,8 @@ const ALIASES = {
     gajar: 'carrots', 'गाजर': 'carrots', nimbu: 'lemons', 'नींबू': 'lemons',
     biscuit: 'cookies', coffee: 'coffee', 'कॉफ़ी': 'coffee', chocolate: 'chocolate', 'चॉकलेट': 'chocolate',
     avocados: 'avocados', shimla: 'capsicum',
+    santra: 'oranges', santre: 'oranges', 'संतरा': 'oranges', 'संतरे': 'oranges',
+    ananas: 'pineapple', 'अनानास': 'pineapple',
     lehsun: 'garlic', 'लहसुन': 'garlic', aaloo: 'potatoes', aloo: 'potatoes', 'आलू': 'potatoes',
     angoor: 'grapes', 'अंगूर': 'grapes', kheera: 'cucumber', 'खीरा': 'cucumber',
     cheeni: 'sugar', 'चीनी': 'sugar', sabun: 'soap', 'साबुन': 'soap',
@@ -504,6 +619,7 @@ const ALIASES = {
     nudeln: 'pasta', lachs: 'salmon', eis: 'ice cream', oel: 'olive oil', honig: 'honey',
     tee: 'tea', hafermilch: 'oat milk', speck: 'bacon', garnelen: 'shrimp', spinat: 'spinach',
     karotten: 'carrots', zitronen: 'lemons', avocado: 'avocados', avocados: 'avocados',
+    orange: 'oranges', orangen: 'oranges', ananas: 'pineapple', mango: 'mango',
     knoblauch: 'garlic', kartoffeln: 'potatoes', trauben: 'grapes', gurke: 'cucumber',
     zucker: 'sugar', suppe: 'soup', seife: 'soap', chips: 'chips', pilze: 'mushrooms',
     thunfisch: 'tuna',
@@ -690,9 +806,11 @@ export function parseIntent(rawText, lang = 'en') {
   const tokens = working.text.split(' ').filter(Boolean);
   const aliasTable = { ...ALIASES.en, ...(ALIASES[lang] || {}) };
   const mapped = tokens.map((token) => {
+    const sToken = singular(token, lang);
     if (aliasTable[token]) return aliasTable[token];
-    if (STOPWORDS.has(token) || NUMBER_WORDS[token] !== undefined || UNIT_LOOKUP[token]) return null;
-    return token;
+    if (aliasTable[sToken]) return aliasTable[sToken];
+    if (STOPWORDS.has(token) || STOPWORDS.has(sToken) || NUMBER_WORDS[token] !== undefined || UNIT_LOOKUP[token]) return null;
+    return sToken;
   });
   const itemTokens = mapped.filter(Boolean).filter((t) => !STOPWORDS.has(t));
   intent.itemName = itemTokens.join(' ').trim();
@@ -754,13 +872,6 @@ export function detectLanguage(text, fallbackShort = 'en') {
  * CATALOG SEARCH & SUBSTITUTES
  * -------------------------------------------------------------------------*/
 
-const singular = (word) => {
-  const n = normalize(word);
-  if (n.endsWith('ies') && n.length > 4) return `${n.slice(0, -3)}y`;
-  if (n.endsWith('s') && !n.endsWith('ss') && n.length > 3) return n.slice(0, -1);
-  return n;
-};
-
 const tokenize = (query) =>
   String(query || '')
     .toLowerCase()
@@ -769,25 +880,66 @@ const tokenize = (query) =>
 
 export function searchCatalog(rawQuery, { maxPrice = null } = {}) {
   const query = normalize(rawQuery);
+  const sQuery = singular(query);
   const organicOnly = /\borganic\b|\bbio\b|\borganica\b|\borganico\b/.test(query);
-  const tokens = tokenize(query).filter((t) => !['organic', 'bio', 'organica', 'organico'].includes(t));
+  const tokens = tokenize(query)
+    .filter((t) => !['organic', 'bio', 'organica', 'organico'].includes(t))
+    .map((t) => singular(t));
 
   const scored = CATALOG.map((item, catalogIndex) => {
     if (organicOnly && !item.isOrganic) return null;
     if (maxPrice !== null && item.price > maxPrice) return null;
 
-    const haystackTokens = [...tokenize(item.name), ...tokenize(item.brand), ...tokenize(item.size || ''), tokenize(DEPARTMENT_INDEX[item.category]?.label || '')];
-    const hay = haystackTokens.map(normalize);
+    const nameTokens = tokenize(item.name).map(normalize);
+    const sNameTokens = nameTokens.map((t) => singular(t));
+    const brandTokens = tokenize(item.brand || '').map(normalize).map((t) => singular(t));
+    const sizeTokens = tokenize(item.size || '').map(normalize).map((t) => singular(t));
+    const deptTokens = tokenize(DEPARTMENT_INDEX[item.category]?.label || '').map(normalize).map((t) => singular(t));
+    const allHaystack = [...sNameTokens, ...brandTokens, ...sizeTokens, ...deptTokens];
+
+    const normalizedName = normalize(item.name);
+    const sNormalizedName = singular(normalizedName);
     let score = 0;
-    for (const rawToken of tokens) {
-      const t = normalize(rawToken);
-      if (!t) continue;
-      const hits = hay.some(
-        (h) => h === t || h === singular(t) || singular(h) === t || h.startsWith(t) || h.startsWith(singular(t)),
-      );
-      if (hits) score += hay.some((h) => h === t) ? 6 : 3;
+
+    // Direct full-name match bonus (normalized or singularized)
+    if (normalizedName === query || sNormalizedName === query || sNormalizedName === sQuery || normalizedName === sQuery) {
+      score += 35;
     }
+
+    const isProduce = item.category === 'produce';
+
+    for (const rawToken of tokens) {
+      const t = rawToken;
+      if (!t) continue;
+
+      // Primary name token match (both raw and singular)
+      const exactNameHit = sNameTokens.some((h) => h === t) || nameTokens.some((h) => h === t);
+      if (exactNameHit) {
+        score += 15;
+        // Exact 1:1 or 1:2 concise name match
+        if (sNameTokens.length <= 2) {
+          score += 15;
+        }
+        if (isProduce) {
+          score += 8; // Prioritize raw produce over flavored snacks/desserts
+        }
+      } else if (sNameTokens.some((h) => h.startsWith(t)) || nameTokens.some((h) => h.startsWith(t))) {
+        score += 5;
+      } else if (allHaystack.some((h) => h === t)) {
+        score += 4;
+      } else if (allHaystack.some((h) => h.startsWith(t))) {
+        score += 2;
+      }
+    }
+
     if (score === 0) return null;
+
+    // Penalize verbose/compound multi-word SKU names when looking for short terms
+    if (tokens.length > 0) {
+      const tokenDiff = Math.max(0, sNameTokens.length - tokens.length);
+      score -= tokenDiff * 2.0;
+    }
+
     return { ...item, score, catalogIndex };
   }).filter(Boolean);
 
