@@ -25,10 +25,11 @@ const check = (label, actual, expected) => {
 };
 
 // --- Dataset contract ---
-check('catalog has 100+ items', CATALOG.length >= 100, true);
+check('catalog has 800+ items', CATALOG.length >= 800, true);
 check('12 departments defined', DEPARTMENTS.length, 12);
 const usedCategories = new Set(CATALOG.map((item) => item.category));
 check('all 12 departments populated', usedCategories.size, 12);
+check('all departments have at least 40 items', DEPARTMENTS.every((d) => CATALOG.filter((i) => i.category === d.id).length >= 40), true);
 const schemaKeys = ['id', 'name', 'category', 'price', 'unit', 'brand', 'size', 'isOrganic', 'inStock', 'onSale', 'salePrice', 'season', 'substitutes'];
 check('every item matches canonical schema', CATALOG.every((item) => JSON.stringify(Object.keys(item).sort()) === JSON.stringify([...schemaKeys].sort())), true);
 check('every item has onSale boolean', CATALOG.every((item) => typeof item.onSale === 'boolean'), true);

@@ -24,9 +24,10 @@ A mobile-first, voice-driven grocery and shopping list web application built wit
 - **Optional Gemini LLM Integration**: Opt-in Gemini API key support for unstructured conversational queries, auto-translating colloquial phrasing into canonical catalog entries with localized replies.
 
 ### 📦 Dynamic Catalog & Smart Suggestions
-- **360 Canonical Grocery Items across 12 Departments**: Complete with brand metadata, sizing details, organic certification, inventory levels, sale pricing, and season markers.
+- **918 Canonical Grocery Items across 12 Departments**: Deep coverage of fresh produce, heirloom varietals, whole grains, raw meats & seafood, packaged goods, dairy, bakery, beverages, household, baby, and pet care.
+- **Multi-Source Hybrid Ingestion**: Synthesized from USDA FoodData Central, Barabasi Lab GroceryDB, and Open Food Facts.
 - **Recency & Frequency History Scoring**: Locally tracks purchase history with custom scoring to surface personalized reorder suggestions.
-- **Seasonal & Sale-Aware Recommendations**: Highlights current seasonal produce and active promotional discounts with strikethrough original prices.
+- **Seasonal & Sale-Aware Recommendations**: Highlights current seasonal produce and active promotional discounts (~15% on sale) with strikethrough original prices.
 - **Stock-Gated Smart Substitutes**: Suggests healthy and relevant alternative swaps when list items are out of stock.
 
 ---
@@ -38,7 +39,26 @@ A mobile-first, voice-driven grocery and shopping list web application built wit
 - **Styling**: Tailwind CSS 3 with custom glassmorphism and animation tokens
 - **Icons**: Lucide React
 - **Web APIs**: Web Speech API (`webkitSpeechRecognition` & `speechSynthesis`), Web Audio API, `localStorage`
-- **Verification Harness**: ESBuild + Node.js (100+ automated logical assertions)
+- **Verification Harness**: ESBuild + Node.js (130+ automated logical assertions)
+
+---
+
+## 📚 Data Sources & Attribution
+
+The catalog is built from three open and public datasets deduplicated with singular-based NLP matching:
+
+1. **USDA FoodData Central (FDC)**:
+   - *Source*: U.S. Department of Agriculture, Agricultural Research Service (Foundation Foods & SR Legacy datasets).
+   - *Focus*: Raw produce, heirloom fruits, vegetables, cuts of meat, seafood, whole grains, and basic pantry staples.
+   - *License*: Public Domain / U.S. Government Work.
+2. **Barabasi Lab GroceryDB**:
+   - *Source*: Center for Complex Network Research, Northeastern University ([GitHub / Kaggle](https://github.com/Barabasi-Lab/GroceryDB)).
+   - *Focus*: Supermarket packaged goods across major U.S. retailers (Target, Walmart, Whole Foods), household, personal care, baby, and snacks.
+   - *License*: Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+3. **Open Food Facts (OFF)**:
+   - *Source*: Open Food Facts contributors ([openfoodfacts.org](https://world.openfoodfacts.org/)).
+   - *Focus*: International and specialty grocery items, organic packaged goods, and allergen/label data.
+   - *License*: Open Database License (ODbL 1.0).
 
 ---
 
@@ -76,8 +96,8 @@ A mobile-first, voice-driven grocery and shopping list web application built wit
 ## 🧪 Verification & Testing
 
 The project includes an automated test runner (`scripts/verify-logic.jsx`) validating:
-- Catalog schema integrity (105 items, unique IDs, sizing, sale prices, stock statuses).
+- Catalog schema integrity (918 items, unique IDs, sizing, sale prices, stock statuses across all 12 departments).
 - Multilingual intent extraction for `ADD`, `REMOVE`, `UPDATE`, `SEARCH`, and `CLEAR` across English, Spanish, French, Hindi/Hinglish, and German.
 - Multi-item utterance parsing and restock phrasing.
-- Catalog fuzzy search, organic filtering, and price caps.
+- Catalog fuzzy search, organic filtering, price caps, and singular/plural term normalization.
 - LLM prompt generation, sanitization, and graceful fallback behaviors.
