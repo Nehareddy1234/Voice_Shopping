@@ -9,6 +9,9 @@ import {
   splitMultiItems,
   detectMultiItem,
   pickPhrase,
+  sanitizeLLMResponse,
+  LLM_SYSTEM_PROMPT,
+  RETRY_LANGUAGE_CHAIN,
   CATALOG,
   DEPARTMENTS,
 } from '../src/App.jsx';
@@ -128,6 +131,8 @@ check('search organic + price top hit', organicApples[0]?.name, 'Organic Apples'
 check('search respects price cap', searchCatalog('salmon', { maxPrice: 5 }).length, 0);
 check('search organic filter excludes conventional', searchCatalog('organic spinach').every((item) => item.isOrganic), true);
 check('search brand match', searchCatalog('bella italia').some((item) => item.brand === 'Bella Italia'), true);
+check('bare "milk" resolves to Whole Milk first', searchCatalog('milk')[0]?.name, 'Whole Milk');
+check('weak EN signal still detected as en', detectLanguage('add oat milk', 'es').short, 'en');
 
 const wholeMilk = CATALOG.find((item) => item.id === 'whole-milk');
 const sub = findSubstitute(wholeMilk);
@@ -148,6 +153,41 @@ for (let i = 0; i < 10; i += 1) {
   prev = next;
 }
 check('phrases never repeat back-to-back', rotated, true);
+
+// --- Recognition retry chain ---
+check('retry chain is an array', Array.isArray(RETRY_LANGUAGE_CHAIN), true);
+check('retry chain starts en-US', RETRY_LANGUAGE_CHAIN[0], 'en-US');
+check('retry chain covers hi-IN', RETRY_LANGUAGE_CHAIN.includes('hi-IN'), true);
+check('retry chain covers es-ES', RETRY_LANGUAGE_CHAIN.includes('es-ES'), true);
+check('retry chain covers fr-FR', RETRY_LANGUAGE_CHAIN.includes('fr-FR'), true);
+
+// --- LLM system prompt contract ---
+check('prompt instructs auto language ID', LLM_SYSTEM_PROMPT.includes('Automatically identify the language spoken'), true);
+check('prompt instructs canonical translation', LLM_SYSTEM_PROMPT.includes('canonical English'), true);
+check('prompt instructs response language code', LLM_SYSTEM_PROMPT.includes('response language code'), true);
+check('prompt demands detectedLanguageCode key', LLM_SYSTEM_PROMPT.includes('detectedLanguageCode'), true);
+check('prompt demands canonicalItem key', LLM_SYSTEM_PROMPT.includes('canonicalItem'), true);
+check('prompt demands originalItemSpoken key', LLM_SYSTEM_PROMPT.includes('originalItemSpoken'), true);
+check('prompt demands replyMessage key', LLM_SYSTEM_PROMPT.includes('replyMessage'), true);
+check('prompt grounds catalog names', LLM_SYSTEM_PROMPT.includes('Whole Milk') && LLM_SYSTEM_PROMPT.includes('Red Onions'), true);
+
+// --- LLM response sanitization ---
+let llm = sanitizeLLMResponse('{"detectedLanguageCode":"hi-IN","action":"ADD","canonicalItem":"Whole Milk","originalItemSpoken":"Doodh","quantity":2,"replyMessage":"Ho gaya!"}');
+check('LLM sanitized code', llm?.detectedLanguageCode, 'hi-IN');
+check('LLM sanitized action', llm?.action, 'ADD');
+check('LLM sanitized quantity', llm?.quantity, 2);
+check('LLM sanitized original item', llm?.originalItemSpoken, 'Doodh');
+
+llm = sanitizeLLMResponse('```json\n{"detectedLanguageCode":"es","action":"bogus","canonicalItem":"Leche"}\n```');
+check('LLM strips markdown fences', llm?.canonicalItem, 'Leche');
+check('LLM unknown action coerced to ADD', llm?.action, 'ADD');
+check('LLM short code mapped to locale', llm?.detectedLanguageCode, 'es-ES');
+check('LLM missing quantity defaults 1', llm?.quantity, 1);
+
+check('LLM rejects missing canonicalItem', sanitizeLLMResponse('{"action":"ADD"}'), null);
+check('LLM rejects garbage string', sanitizeLLMResponse('not json at all'), null);
+check('LLM rejects null', sanitizeLLMResponse(null), null);
+check('LLM unknown locale falls back en-US', sanitizeLLMResponse({ detectedLanguageCode: 'xx-XX', canonicalItem: 'Milk' })?.detectedLanguageCode, 'en-US');
 
 console.log(failures === 0 ? '\nALL CHECKS PASSED' : `\n${failures} CHECK(S) FAILED`);
 if (failures > 0) process.exit(1);

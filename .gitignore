@@ -2,6 +2,8 @@ node_modules
 dist
 dist-ssr
 *.local
+.tmp-verify.cjs
+.vercel-tmp/
 .env
 .env.*
 .DS_Store

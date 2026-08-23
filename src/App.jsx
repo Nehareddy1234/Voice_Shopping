@@ -493,7 +493,7 @@ export function detectLanguage(text, fallbackShort = 'en') {
     const score = lexiconScore(normText, short);
     if (score > best.score) best = { short, score };
   }
-  if (best.short && best.score >= 3) return languageMeta(best.short, 'lexicon');
+  if (best.short && best.score >= 2) return languageMeta(best.short, 'lexicon');
   return languageMeta(fallbackShort, 'fallback');
 }
 
@@ -519,7 +519,7 @@ export function searchCatalog(rawQuery, { maxPrice = null } = {}) {
   const organicOnly = /\borganic\b|\bbio\b|\borganica\b|\borganico\b/.test(query);
   const tokens = tokenize(query).filter((t) => !['organic', 'bio', 'organica', 'organico'].includes(t));
 
-  const scored = CATALOG.map((item) => {
+  const scored = CATALOG.map((item, catalogIndex) => {
     if (organicOnly && !item.isOrganic) return null;
     if (maxPrice !== null && item.price > maxPrice) return null;
 
@@ -535,10 +535,12 @@ export function searchCatalog(rawQuery, { maxPrice = null } = {}) {
       if (hits) score += hay.some((h) => h === t) ? 6 : 3;
     }
     if (score === 0) return null;
-    return { ...item, score };
+    return { ...item, score, catalogIndex };
   }).filter(Boolean);
 
-  return scored.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name)).map(({ score, ...item }) => item);
+  return scored
+    .sort((a, b) => b.score - a.score || a.catalogIndex - b.catalogIndex)
+    .map(({ score, catalogIndex, ...item }) => item);
 }
 
 export function findSubstitute(product) {
@@ -639,6 +641,100 @@ export function splitMultiItems(text) {
 export const detectMultiItem = (text) => splitMultiItems(text).length > 1;
 
 /* ---------------------------------------------------------------------------
+ * LLM AUTO-DETECTION ENGINE (optional Gemini refinement)
+ * Raw transcripts in ANY language go in; canonical English + detected
+ * language code + localized reply come out. Silent degradation to the
+ * on-device parser when no key is configured or the call fails.
+ * -------------------------------------------------------------------------*/
+
+export const RETRY_LANGUAGE_CHAIN = ['en-US', 'hi-IN', 'es-ES', 'fr-FR', 'de-DE'];
+
+export const buildLLMSystemPrompt = () => `You are the multilingual NLP engine of a voice shopping assistant.
+Canonical store catalog (match items ONLY against these names): ${CATALOG.map((item) => item.name).join(', ')}.
+
+For every raw voice transcript you receive, you must:
+1. Automatically identify the language spoken in the input transcript (e.g., Hindi, Hinglish, Spanish, French, German, English).
+2. Translate the intent and item into canonical English for database matching.
+3. Identify the response language code (e.g., 'hi-IN', 'es-ES', 'en-US').
+4. Return a structured JSON response containing exactly these keys:
+{
+  "detectedLanguageCode": "hi-IN",
+  "action": "ADD" | "REMOVE" | "SEARCH",
+  "canonicalItem": "Milk",
+  "originalItemSpoken": "Doodh",
+  "quantity": 2,
+  "replyMessage": "Do packet doodh aapki list mein add kar diya hai!"
+}
+
+Rules:
+- "action" must be one of ADD, REMOVE, SEARCH. Use ADD when unsure.
+- "canonicalItem" must be the closest canonical English catalog name above (or the best English guess).
+- "quantity" is a number; default to 1 when not spoken.
+- "originalItemSpoken" is the item exactly as the user said it, in their language.
+- "replyMessage" is a warm, casual one-sentence confirmation written in the SAME language the user spoke (Hinglish allowed for Hindi speakers), mentioning the item.
+- Return ONLY the JSON object. No markdown, no commentary.`;
+
+export const LLM_SYSTEM_PROMPT = buildLLMSystemPrompt();
+
+export function sanitizeLLMResponse(raw) {
+  if (!raw) return null;
+  let parsed = raw;
+  if (typeof raw === 'string') {
+    try {
+      const cleaned = raw.replace(/```(?:json)?/gi, '').trim();
+      parsed = JSON.parse(cleaned);
+    } catch {
+      return null;
+    }
+  }
+  if (!parsed || typeof parsed !== 'object') return null;
+  const code = typeof parsed.detectedLanguageCode === 'string' ? parsed.detectedLanguageCode.trim() : '';
+  const short = code.split('-')[0].toLowerCase();
+  const action = ['ADD', 'REMOVE', 'SEARCH'].includes(String(parsed.action).toUpperCase())
+    ? String(parsed.action).toUpperCase()
+    : 'ADD';
+  const canonicalItem = typeof parsed.canonicalItem === 'string' ? parsed.canonicalItem.trim() : '';
+  if (!canonicalItem) return null;
+  return {
+    detectedLanguageCode: LANGUAGE_INDEX[short]?.code || 'en-US',
+    action,
+    canonicalItem,
+    originalItemSpoken: typeof parsed.originalItemSpoken === 'string' ? parsed.originalItemSpoken : canonicalItem,
+    quantity: Number(parsed.quantity) > 0 ? Number(parsed.quantity) : 1,
+    replyMessage: typeof parsed.replyMessage === 'string' ? parsed.replyMessage : '',
+  };
+}
+
+export async function parseWithLLM(transcript, apiKey, { timeoutMs = 8000 } = {}) {
+  if (!apiKey) throw new Error('missing-api-key');
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(apiKey)}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: LLM_SYSTEM_PROMPT }] },
+          contents: [{ role: 'user', parts: [{ text: String(transcript) }] }],
+          generationConfig: { responseMimeType: 'application/json', temperature: 0.2 },
+        }),
+        signal: controller.signal,
+      },
+    );
+    if (!response.ok) throw new Error(`llm-http-${response.status}`);
+    const data = await response.json();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const sanitized = sanitizeLLMResponse(text);
+    if (!sanitized) throw new Error('llm-unparsable-response');
+    return sanitized;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/* ---------------------------------------------------------------------------
  * WEB SPEECH HOOKS
  * -------------------------------------------------------------------------*/
 
@@ -663,9 +759,16 @@ export function usePersistentState(key, initialValue) {
   return [value, setValue];
 }
 
-export function useSpeechRecognition({ lang, onResult, onError, onStateChange }) {
+const LOW_CONFIDENCE_THRESHOLD = 0.4;
+const RETRYABLE_SPEECH_ERRORS = new Set(['no-speech', 'network', 'audio-capture', 'language-not-supported']);
+
+export function useSpeechRecognition({ lang, fallbackLangs = null, onResult, onError, onStateChange, onLangSwitch }) {
   const [isListening, setIsListening] = useState(false);
+  const [activeLang, setActiveLang] = useState(lang);
   const recognitionRef = useRef(null);
+  const retryIndexRef = useRef(0);
+  const manualStopRef = useRef(false);
+  const restartingRef = useRef(false);
 
   const SpeechRecognition =
     typeof window !== 'undefined'
@@ -673,7 +776,103 @@ export function useSpeechRecognition({ lang, onResult, onError, onStateChange })
       : null;
   const supported = Boolean(SpeechRecognition);
 
+  const chain = useMemo(() => {
+    if (Array.isArray(fallbackLangs) && fallbackLangs.length > 1) return fallbackLangs;
+    return [lang];
+  }, [fallbackLangs, lang]);
+  const autoRetry = chain.length > 1;
+
+  const bootRecognition = useCallback(
+    (langCode) => {
+      const recognition = new SpeechRecognition();
+      recognition.lang = langCode;
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onresult = (event) => {
+        const alternative = event.results?.[0]?.[0];
+        const transcript = alternative?.transcript || '';
+        const confidence = alternative?.confidence ?? 1;
+
+        // Low-confidence transcript on locale A → instantly re-listen on the next locale.
+        if (
+          autoRetry &&
+          !manualStopRef.current &&
+          confidence > 0 &&
+          confidence < LOW_CONFIDENCE_THRESHOLD &&
+          retryIndexRef.current < chain.length - 1
+        ) {
+          retryIndexRef.current += 1;
+          onLangSwitch?.(chain[retryIndexRef.current], 'low-confidence');
+          restartWith(chain[retryIndexRef.current]);
+          return;
+        }
+
+        retryIndexRef.current = 0;
+        if (transcript.trim()) onResult?.(transcript.trim(), langCode);
+      };
+
+      recognition.onerror = (event) => {
+        if (restartingRef.current && event.error === 'aborted') return;
+        const errorType = event.error || 'unknown';
+
+        // Input/network error on locale A → rotate to the next locale and retry.
+        if (
+          autoRetry &&
+          RETRYABLE_SPEECH_ERRORS.has(errorType) &&
+          !manualStopRef.current &&
+          retryIndexRef.current < chain.length - 1
+        ) {
+          retryIndexRef.current += 1;
+          onLangSwitch?.(chain[retryIndexRef.current], errorType);
+          restartWith(chain[retryIndexRef.current]);
+          return;
+        }
+
+        setIsListening(false);
+        onStateChange?.('error');
+        onError?.({
+          type: autoRetry && RETRYABLE_SPEECH_ERRORS.has(errorType) ? 'exhausted' : errorType,
+          message: errorType,
+        });
+      };
+
+      recognition.onend = () => {
+        if (restartingRef.current) return;
+        setIsListening(false);
+        onStateChange?.((prev) => (prev === 'processing' ? 'processing' : 'idle'));
+      };
+
+      recognitionRef.current = recognition;
+      try {
+        recognition.start();
+        setActiveLang(langCode);
+        setIsListening(true);
+        onStateChange?.('listening');
+      } catch {
+        onError?.({ type: 'start-failed', message: 'Could not start the microphone.' });
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [autoRetry, chain, onResult, onError, onStateChange, onLangSwitch],
+  );
+
+  const restartWith = useCallback(
+    (langCode) => {
+      restartingRef.current = true;
+      try {
+        recognitionRef.current?.abort();
+      } catch {
+        /* nothing to abort */
+      }
+      bootRecognition(langCode);
+      restartingRef.current = false;
+    },
+    [bootRecognition],
+  );
+
   const stop = useCallback(() => {
+    manualStopRef.current = true;
     try {
       recognitionRef.current?.stop();
     } catch {
@@ -688,39 +887,15 @@ export function useSpeechRecognition({ lang, onResult, onError, onStateChange })
       onError?.({ type: 'unsupported', message: 'Speech recognition is not supported in this browser.' });
       return;
     }
+    manualStopRef.current = false;
+    retryIndexRef.current = 0;
     try {
       recognitionRef.current?.abort();
     } catch {
       /* nothing to abort */
     }
-    const recognition = new SpeechRecognition();
-    recognition.lang = lang;
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-
-    recognition.onresult = (event) => {
-      const transcript = event.results?.[0]?.[0]?.transcript || '';
-      if (transcript.trim()) onResult?.(transcript.trim());
-    };
-    recognition.onerror = (event) => {
-      setIsListening(false);
-      onStateChange?.('error');
-      onError?.({ type: event.error || 'unknown', message: event.error });
-    };
-    recognition.onend = () => {
-      setIsListening(false);
-      onStateChange?.((prev) => (prev === 'processing' ? 'processing' : 'idle'));
-    };
-
-    recognitionRef.current = recognition;
-    try {
-      recognition.start();
-      setIsListening(true);
-      onStateChange?.('listening');
-    } catch {
-      onError?.({ type: 'start-failed', message: 'Could not start the microphone.' });
-    }
-  }, [supported, lang, onResult, onError, onStateChange]);
+    bootRecognition(chain[0]);
+  }, [supported, chain, bootRecognition, onError]);
 
   const toggle = useCallback(() => {
     if (isListening) stop();
@@ -728,6 +903,7 @@ export function useSpeechRecognition({ lang, onResult, onError, onStateChange })
   }, [isListening, start, stop]);
 
   useEffect(() => () => {
+    manualStopRef.current = true;
     try {
       recognitionRef.current?.abort();
     } catch {
@@ -735,7 +911,7 @@ export function useSpeechRecognition({ lang, onResult, onError, onStateChange })
     }
   }, []);
 
-  return { supported, isListening, start, stop, toggle };
+  return { supported, isListening, activeLang, start, stop, toggle };
 }
 
 export function useSpeechSynthesis() {
@@ -848,15 +1024,19 @@ function Toast({ toast, onDismiss }) {
         <p className="text-sm font-semibold">{toast.title}</p>
         {toast.message && <p className="mt-0.5 text-xs opacity-80">{toast.message}</p>}
       </div>
-      {toast.langBadge && (
+      {toast.detected ? (
+        <span className="inline-flex shrink-0 animate-badge-pop items-center gap-1 rounded-full bg-white/80 px-2.5 py-1 text-[10px] font-bold text-slate-700 ring-1 ring-slate-200 shadow-sm">
+          🌐 Auto-Detected: {toast.detected.label} ({toast.detected.code})
+        </span>
+      ) : toast.langBadge ? (
         <span className="rounded-full bg-white/70 px-2 py-0.5 text-[10px] font-semibold">
           {toast.langBadge}
         </span>
-      )}
+      ) : null}
       <button
         type="button"
         onClick={() => onDismiss(toast.id)}
-        className="rounded-full p-1 opacity-60 transition hover:opacity-100"
+        className="rounded-full p-1.5 opacity-60 transition hover:opacity-100"
         aria-label="Dismiss notification"
       >
         <X className="h-4 w-4" />
@@ -919,7 +1099,7 @@ function VoiceStatusBadge({ listening, supported }) {
 
 function SkeletonCard() {
   return (
-    <div className="animate-pulse rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
+    <div className="animate-pulse rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200/60">
       <div className="h-4 w-2/3 rounded bg-slate-100" />
       <div className="mt-3 h-3 w-1/3 rounded bg-slate-100" />
     </div>
@@ -928,7 +1108,7 @@ function SkeletonCard() {
 
 function EmptyListState() {
   return (
-    <div className="flex flex-col items-center gap-4 rounded-2xl bg-white p-10 text-center shadow-sm ring-1 ring-slate-100">
+    <div className="flex flex-col items-center gap-4 rounded-3xl bg-white p-10 text-center shadow-sm ring-1 ring-slate-200/60">
       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 text-blue-600">
         <ShoppingCart className="h-8 w-8" />
       </div>
@@ -952,7 +1132,7 @@ function QtyStepper({ entry, onQty }) {
       <button
         type="button"
         onClick={() => onQty(entry, entry.quantity - 1)}
-        className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm ring-1 ring-slate-200 transition hover:bg-blue-50 hover:text-blue-600"
+        className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm ring-1 ring-slate-200/60 transition hover:bg-blue-50 hover:text-blue-600"
         aria-label={`Decrease ${entry.name} quantity`}
       >
         <Minus className="h-4 w-4" />
@@ -963,7 +1143,7 @@ function QtyStepper({ entry, onQty }) {
       <button
         type="button"
         onClick={() => onQty(entry, entry.quantity + 1)}
-        className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm ring-1 ring-slate-200 transition hover:bg-blue-50 hover:text-blue-600"
+        className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm ring-1 ring-slate-200/60 transition hover:bg-blue-50 hover:text-blue-600"
         aria-label={`Increase ${entry.name} quantity`}
       >
         <Plus className="h-4 w-4" />
@@ -976,7 +1156,7 @@ function ListItemRow({ entry, onQty, onToggle, onRemove, substitute, onAddSubsti
   const dept = DEPARTMENT_INDEX[entry.category];
   const DeptIcon = dept?.icon || Package;
   return (
-    <div className="group rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100 transition hover:shadow-lg animate-fade-in-down">
+    <div className="group rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200/60 transition-shadow duration-200 hover:shadow-md animate-fade-in-down">
       <div className="flex items-start gap-3">
         <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${dept?.tint || 'bg-slate-100 text-slate-600'}`}>
           <DeptIcon className="h-5 w-5" />
@@ -1002,7 +1182,7 @@ function ListItemRow({ entry, onQty, onToggle, onRemove, substitute, onAddSubsti
           <button
             type="button"
             onClick={() => onRemove(entry)}
-            className="rounded-full p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
+            className="rounded-full p-2.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
             aria-label={`Remove ${entry.name} from list`}
           >
             <Trash2 className="h-4 w-4" />
@@ -1027,7 +1207,7 @@ function ListItemRow({ entry, onQty, onToggle, onRemove, substitute, onAddSubsti
       </div>
 
       {substitute && !entry.checked && (
-        <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-amber-50 p-3 text-amber-800 ring-1 ring-amber-100">
+        <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-amber-50 p-4 text-amber-800 ring-1 ring-amber-200/60">
           <span className="flex items-center gap-2 text-xs font-medium">
             <RefreshCw className="h-3.5 w-3.5 shrink-0" />
             Substitute available: <span className="font-semibold">{substitute.name}</span> ({formatPrice(substitute.price)})
@@ -1035,7 +1215,7 @@ function ListItemRow({ entry, onQty, onToggle, onRemove, substitute, onAddSubsti
           <button
             type="button"
             onClick={() => onAddSubstitute(substitute)}
-            className="shrink-0 rounded-full bg-amber-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-amber-700"
+            className="shrink-0 rounded-full bg-amber-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-amber-700"
           >
             Add
           </button>
@@ -1081,7 +1261,7 @@ function MyListView({ list, onQty, onToggle, onRemove, substitutesByEntry, onAdd
       {grouped.map(({ dept, items }) => {
         const DeptIcon = dept.icon;
         return (
-          <section key={dept.id} className="space-y-3">
+          <section key={dept.id} className="space-y-4">
             <header className="flex items-center gap-2 px-1">
               <span className={`flex h-7 w-7 items-center justify-center rounded-full ${dept.tint}`}>
                 <DeptIcon className="h-3.5 w-3.5" />
@@ -1126,7 +1306,7 @@ function SearchView({ results, query, maxPrice, onAdd, booting }) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
+      <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200/60 transition-shadow duration-200 hover:shadow-md">
         <p className="flex items-center gap-2 text-sm text-slate-600">
           <Search className="h-4 w-4 text-blue-600" />
           {query ? (
@@ -1148,7 +1328,7 @@ function SearchView({ results, query, maxPrice, onAdd, booting }) {
           ))}
         </div>
       ) : results.length === 0 ? (
-        <div className="rounded-2xl bg-white p-10 text-center shadow-sm ring-1 ring-slate-100">
+        <div className="rounded-2xl bg-white p-10 text-center shadow-sm ring-1 ring-slate-200/60">
           <p className="text-sm font-semibold text-slate-800">No matches found</p>
           <p className="mt-1 text-sm text-slate-500">Try a broader term, a different brand, or a higher price limit.</p>
         </div>
@@ -1165,7 +1345,7 @@ function SearchView({ results, query, maxPrice, onAdd, booting }) {
 
 function SearchResultCard({ item, onAdd }) {
   return (
-    <div className="flex flex-col rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100 transition hover:shadow-lg animate-fade-in-down">
+    <div className="flex flex-col rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200/60 transition-shadow duration-200 hover:shadow-md animate-fade-in-down">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-slate-800">{item.name}</p>
@@ -1211,7 +1391,7 @@ function SuggestionChip({ item, label, onPick }) {
     <button
       type="button"
       onClick={() => onPick(item)}
-      className="flex shrink-0 cursor-pointer items-center gap-2 rounded-xl bg-blue-50 p-3 text-left text-sm font-medium text-blue-800 ring-1 ring-blue-100 transition hover:bg-blue-100 active:scale-[0.98]"
+      className="flex shrink-0 cursor-pointer items-center gap-2 rounded-xl bg-blue-50 p-3 text-left text-sm font-medium text-blue-800 ring-1 ring-blue-200/60 transition hover:bg-blue-100 active:scale-[0.98]"
     >
       <Plus className="h-3.5 w-3.5 text-blue-500" />
       <span>
@@ -1266,7 +1446,7 @@ function SuggestionsPanel({ list, onPick }) {
         Smart Suggestions
       </h2>
       {sections.map(({ icon: Icon, title, items, label }) => (
-        <div key={title} className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
+        <div key={title} className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200/60 transition-shadow duration-200 hover:shadow-md">
           <p className="mb-3 flex items-center gap-1.5 text-xs font-semibold text-slate-500">
             <Icon className="h-3.5 w-3.5 text-blue-500" />
             {title}
@@ -1326,7 +1506,7 @@ function VoiceBar({
         ))}
       </div>
 
-      <div className="rounded-[1.75rem] border border-slate-200/70 bg-white/90 p-4 shadow-xl shadow-blue-900/10 backdrop-blur-xl">
+      <div className="rounded-[1.75rem] border border-slate-200/60 bg-white/90 p-5 shadow-xl shadow-blue-900/10 backdrop-blur-xl">
         <div className="mb-3 flex items-center justify-between px-1">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
             <Globe className="h-3 w-3" />
@@ -1394,10 +1574,17 @@ function VoiceBar({
  * HEADER — status badges, language dropdown, view switcher
  * -------------------------------------------------------------------------*/
 
-function Header({ listening, supported, selectedLang, onSelectLang, view, onChangeView, itemCount }) {
+function Header({ listening, supported, selectedLang, onSelectLang, view, onChangeView, itemCount, llmKey, onSaveLlmKey }) {
+  const [aiOpen, setAiOpen] = useState(false);
+  const [keyDraft, setKeyDraft] = useState(llmKey || '');
+
+  useEffect(() => {
+    if (aiOpen) setKeyDraft(llmKey || '');
+  }, [aiOpen, llmKey]);
+
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-100 bg-white/80 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
+    <header className="sticky top-0 z-[55] border-b border-slate-100 bg-white/80 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 sm:px-6 md:px-8">
         <div className="flex items-center gap-2.5">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-blue-500 text-white shadow-sm shadow-blue-500/30">
             <ShoppingCart className="h-5 w-5" />
@@ -1410,9 +1597,83 @@ function Header({ listening, supported, selectedLang, onSelectLang, view, onChan
 
         <div className="flex items-center gap-1.5">
           <VoiceStatusBadge listening={listening} supported={supported} />
+          {llmKey && (
+            <span className="inline-flex animate-badge-pop items-center gap-1 rounded-full bg-violet-50 px-2.5 py-1 text-[10px] font-bold text-violet-700 ring-1 ring-violet-200">
+              <Sparkles className="h-3 w-3" />
+              AI Parser
+            </span>
+          )}
         </div>
 
         <div className="ml-auto flex items-center gap-2">
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setAiOpen((open) => !open)}
+              className={`relative flex h-9 w-9 items-center justify-center rounded-full ring-1 transition ${
+                llmKey
+                  ? 'bg-violet-50 text-violet-600 ring-violet-200 hover:bg-violet-100'
+                  : 'bg-slate-100 text-slate-500 ring-slate-200 hover:bg-slate-200'
+              }`}
+              aria-label="AI language detection settings"
+            >
+              <Sparkles className="h-4 w-4" />
+            </button>
+            {aiOpen && (
+              <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-2xl bg-white p-5 shadow-xl ring-1 ring-slate-200/60 animate-fade-in-down">
+                <p className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+                  <Sparkles className="h-3.5 w-3.5 text-violet-500" />
+                  Gemini auto-detect (optional)
+                </p>
+                <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
+                  Paste a Gemini API key to let the AI identify the spoken language on the fly, translate items to
+                  canonical English, and reply in the speaker’s own language. Without a key, the on-device
+                  auto-detect parser handles everything.
+                </p>
+                <input
+                  type="password"
+                  value={keyDraft}
+                  onChange={(event) => setKeyDraft(event.target.value)}
+                  placeholder="Gemini API key"
+                  className="mt-3 w-full rounded-xl border-0 bg-slate-50 px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                  aria-label="Gemini API key"
+                />
+                <div className="mt-2.5 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSaveLlmKey(keyDraft.trim());
+                      setAiOpen(false);
+                    }}
+                    className="rounded-full bg-violet-600 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-violet-700"
+                  >
+                    Save
+                  </button>
+                  {llmKey && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onSaveLlmKey('');
+                        setKeyDraft('');
+                      }}
+                      className="rounded-full bg-slate-100 px-4 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-200"
+                    >
+                      Remove key
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setAiOpen(false)}
+                    className="ml-auto rounded-full p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                    aria-label="Close AI settings"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
           <label className="relative inline-flex items-center">
             <Globe className="pointer-events-none absolute left-2.5 h-3.5 w-3.5 text-slate-400" />
             <select
@@ -1469,6 +1730,8 @@ const SPEECH_ERROR_MESSAGES = {
   network: 'Voice service hit a network error — falling back to the text bar.',
   'audio-capture': 'No microphone was found — you can type commands instead.',
   'no-speech': 'I didn’t catch anything — try again or type it below.',
+  exhausted: 'I tried every language locale and still couldn’t listen — the text bar is ready.',
+  'language-not-supported': 'That locale isn’t supported here — the text bar still works.',
   unsupported: 'This browser doesn’t support voice input — the text bar works great.',
 };
 
@@ -1485,6 +1748,7 @@ export default function App() {
 
   const [selectedLang, setSelectedLang] = usePersistentState('vc.lang.v1', 'auto');
   const [lastDetected, setLastDetected] = usePersistentState('vc.detected.v1', 'en');
+  const [llmKey, setLlmKey] = usePersistentState('vc.llm.key.v1', '');
   const [view, setView] = useState('list');
   const [booting, setBooting] = useState(true);
   const [toasts, setToasts] = useState([]);
@@ -1549,7 +1813,7 @@ export default function App() {
   );
 
   const addProduct = useCallback(
-    (product, quantity = 1, unit = null, { lang = null, phraseCategory = 'add', silent = false } = {}) => {
+    (product, quantity = 1, unit = null, { lang = null, phraseCategory = 'add', silent = false, detected = null } = {}) => {
       dispatch({ type: 'ADD', product, quantity, unit });
       if (silent || !lang) return;
       const sub = findSubstitute(product);
@@ -1558,25 +1822,29 @@ export default function App() {
         type: 'success',
         title: `Added ${product.name}`,
         message: `${quantity} × ${unit || product.unit} · ${formatPrice(product.price)} each${subNote}`,
-        langBadge: `${lang.flag} ${lang.label}`,
+        ...(detected ? { detected } : { langBadge: `${lang.flag} ${lang.label}` }),
       });
       tts.speak(pickPhrase(lang.short, phraseCategory, product.name, quantity), lang.code);
     },
     [pushToast, tts],
   );
 
-  const handleCommand = useCallback(
-    (rawText) => {
+  const parseOnDevice = useCallback(
+    (rawText, hintedShort = null) => {
       const trimmed = String(rawText || '').trim();
       if (!trimmed) return;
       setVoiceState('processing');
 
-      const fallbackShort = selectedLang !== 'auto' ? selectedLang : lastDetected || browserShort;
+      const baseFallback = selectedLang !== 'auto' ? selectedLang : hintedShort || lastDetected || browserShort;
       const lang =
-        selectedLang === 'auto' ? detectLanguage(trimmed, fallbackShort) : languageMeta(selectedLang, 'manual');
+        selectedLang === 'auto' ? detectLanguage(trimmed, baseFallback) : languageMeta(selectedLang, 'manual');
       if (selectedLang === 'auto' && lang.source !== 'fallback' && lang.short !== lastDetected) {
         setLastDetected(lang.short);
       }
+      const langTag =
+        selectedLang === 'auto'
+          ? { detected: { label: lang.label, code: lang.code } }
+          : { langBadge: `${lang.flag} ${lang.label}` };
 
       const intent = parseIntent(trimmed, lang.short);
       const restock = detectRestockContext(trimmed, lang.short);
@@ -1611,7 +1879,7 @@ export default function App() {
               type: 'success',
               title: `${uniqueNames.length} item${uniqueNames.length === 1 ? '' : 's'} added to list`,
               message: uniqueNames.join(', '),
-              langBadge: `${lang.flag} ${lang.label}`,
+              ...langTag,
             });
             tts.speak(
               pickPhrase(lang.short, uniqueNames.length > 1 ? 'addMulti' : restock ? 'addRestock' : 'add', uniqueNames[0]),
@@ -1634,6 +1902,7 @@ export default function App() {
           addProduct(results[0], intent.quantity, intent.unit !== 'pcs' ? intent.unit : null, {
             lang,
             phraseCategory: restock ? 'addRestock' : 'add',
+            detected: selectedLang === 'auto' ? { label: lang.label, code: lang.code } : null,
           });
           setView('list');
           finish();
@@ -1654,7 +1923,7 @@ export default function App() {
           }
           dispatch({ type: 'REMOVE', id: target.id });
           setView('list');
-          pushToast({ type: 'info', title: `Removed ${target.name}`, message: 'Taken off your list.', langBadge: `${lang.flag} ${lang.label}` });
+          pushToast({ type: 'info', title: `Removed ${target.name}`, message: 'Taken off your list.', ...langTag });
           tts.speak(pickPhrase(lang.short, 'remove', target.name), lang.code);
           finish();
           return;
@@ -1673,7 +1942,7 @@ export default function App() {
         case 'CLEAR': {
           dispatch({ type: 'CLEAR' });
           setView('list');
-          pushToast({ type: 'info', title: 'List cleared', message: 'Every item was removed.', langBadge: `${lang.flag} ${lang.label}` });
+          pushToast({ type: 'info', title: 'List cleared', message: 'Every item was removed.', ...langTag });
           tts.speak(pickPhrase(lang.short, 'cleared'), lang.code);
           finish();
           return;
@@ -1686,14 +1955,133 @@ export default function App() {
     [addProduct, browserShort, lastDetected, list, pushToast, selectedLang, setLastDetected, tts],
   );
 
-  const { supported: recognitionSupported, isListening, toggle: toggleMic } = useSpeechRecognition({
+  const applyLLMResult = useCallback(
+    (llm) => {
+      const code = llm.detectedLanguageCode;
+      const short = code.split('-')[0].toLowerCase();
+      const meta = languageMeta(short);
+      const detected = { label: meta.label, code };
+      setLastDetected(short);
+      const finish = () => setVoiceState('idle');
+
+      switch (llm.action) {
+        case 'ADD': {
+          const results = searchCatalog(llm.canonicalItem);
+          if (results.length === 0) {
+            pushToast({ type: 'error', title: 'Item not found', message: `No match for “${llm.canonicalItem}” in the catalog.`, detected });
+            tts.speak(pickPhrase(short, 'notFound'), code);
+            finish();
+            return;
+          }
+          const product = results[0];
+          dispatch({ type: 'ADD', product, quantity: llm.quantity, unit: undefined });
+          const sub = findSubstitute(product);
+          const subNote = sub ? ` If it’s sold out, try ${sub.name}.` : '';
+          pushToast({
+            type: 'success',
+            title: `Added ${product.name}`,
+            message: `${llm.quantity} × ${product.unit} · ${formatPrice(product.price)} each · spoken as “${llm.originalItemSpoken}”${subNote}`,
+            detected,
+          });
+          tts.speak(llm.replyMessage || pickPhrase(short, 'add', product.name, llm.quantity), code);
+          setView('list');
+          finish();
+          return;
+        }
+
+        case 'REMOVE': {
+          const target = list.find(
+            (entry) =>
+              normalize(entry.name).includes(normalize(llm.canonicalItem)) ||
+              normalize(llm.canonicalItem).includes(normalize(entry.name)),
+          );
+          if (!target) {
+            pushToast({ type: 'error', title: 'Nothing to remove', message: `“${llm.canonicalItem}” isn’t on your list.`, detected });
+            tts.speak(pickPhrase(short, 'notFound'), code);
+            finish();
+            return;
+          }
+          dispatch({ type: 'REMOVE', id: target.id });
+          setView('list');
+          pushToast({ type: 'info', title: `Removed ${target.name}`, message: 'Taken off your list.', detected });
+          tts.speak(llm.replyMessage || pickPhrase(short, 'remove', target.name), code);
+          finish();
+          return;
+        }
+
+        case 'SEARCH': {
+          const results = searchCatalog(llm.canonicalItem);
+          setSearchQuery(llm.canonicalItem);
+          setSearchMaxPrice(null);
+          setSearchResults(results);
+          setView('search');
+          if (llm.replyMessage) tts.speak(llm.replyMessage, code);
+          finish();
+          return;
+        }
+
+        default:
+          finish();
+      }
+    },
+    [list, pushToast, setLastDetected, tts],
+  );
+
+  const handleCommand = useCallback(
+    async (rawText, recognitionLocale = null) => {
+      const trimmed = String(rawText || '').trim();
+      if (!trimmed) return;
+      setVoiceState('processing');
+
+      // LLM refinement first (any-language transcript in → canonical English + localized reply out).
+      if (llmKey) {
+        try {
+          const llm = await parseWithLLM(trimmed, llmKey);
+          applyLLMResult(llm);
+          return;
+        } catch {
+          // Silent degradation: the on-device auto-detect parser takes over.
+        }
+      }
+
+      // On-device heuristic pipeline. The recognition locale is a free hint:
+      // if the transcript lexically matches the locale's language, trust it.
+      const hinted = recognitionLocale
+        ? languageMeta(recognitionLocale.split('-')[0].toLowerCase()).short
+        : null;
+      parseOnDevice(trimmed, hinted);
+    },
+    [applyLLMResult, llmKey, parseOnDevice],
+  );
+
+  const retryChain = useMemo(() => {
+    if (selectedLang !== 'auto') return null;
+    const preferred = LANGUAGE_INDEX[lastDetected]?.code || LANGUAGE_INDEX[browserShort].code;
+    return [preferred, ...RETRY_LANGUAGE_CHAIN.filter((code) => code !== preferred)];
+  }, [selectedLang, lastDetected, browserShort]);
+
+  const handleLangSwitch = useCallback(
+    (code, reason) => {
+      const meta = languageMeta(code.split('-')[0].toLowerCase());
+      pushToast({
+        type: 'info',
+        title: `Retrying mic in ${meta.label}`,
+        message: `Auto-switched recognition to ${code} (${reason === 'low-confidence' ? 'low-confidence transcript' : reason}).`,
+      });
+    },
+    [pushToast],
+  );
+
+  const { supported: recognitionSupported, isListening, activeLang, toggle: toggleMic } = useSpeechRecognition({
     lang: recognitionLang,
+    fallbackLangs: retryChain,
     onResult: handleCommand,
     onError: handleSpeechError,
     onStateChange: (state) => {
       if (typeof state === 'function') return;
       setVoiceState((prev) => (state === 'idle' && prev === 'processing' ? prev : state));
     },
+    onLangSwitch: handleLangSwitch,
   });
 
   const substitutesByEntry = useMemo(() => {
@@ -1719,7 +2107,7 @@ export default function App() {
 
   const langMeta = LANGUAGE_INDEX[selectedLang] || null;
   const statusText = isListening
-    ? 'Listening…'
+    ? `Listening in ${activeLang}…`
     : voiceState === 'processing'
       ? 'Processing…'
       : recognitionSupported
@@ -1727,7 +2115,7 @@ export default function App() {
         : 'Voice offline — type below';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 text-slate-800">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100/50 to-blue-50/20 text-slate-800">
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
 
       <Header
@@ -1738,9 +2126,11 @@ export default function App() {
         view={view}
         onChangeView={setView}
         itemCount={list.length}
+        llmKey={llmKey}
+        onSaveLlmKey={setLlmKey}
       />
 
-      <main className="mx-auto max-w-3xl space-y-6 px-4 pb-64 pt-6">
+      <main className="mx-auto max-w-5xl space-y-4 px-4 pb-64 pt-6 sm:space-y-6 sm:px-6 md:px-8">
         {booting ? (
           <div className="space-y-4">
             <SkeletonCard />
