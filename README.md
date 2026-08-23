@@ -24,7 +24,7 @@ A mobile-first, voice-driven grocery and shopping list web application built wit
 - **Optional Gemini LLM Integration**: Opt-in Gemini API key support for unstructured conversational queries, auto-translating colloquial phrasing into canonical catalog entries with localized replies.
 
 ### 📦 Dynamic Catalog & Smart Suggestions
-- **105 Canonical Grocery Items across 12 Departments**: Complete with brand metadata, sizing details, organic certification, inventory levels, sale pricing, and season markers.
+- **360 Canonical Grocery Items across 12 Departments**: Complete with brand metadata, sizing details, organic certification, inventory levels, sale pricing, and season markers.
 - **Recency & Frequency History Scoring**: Locally tracks purchase history with custom scoring to surface personalized reorder suggestions.
 - **Seasonal & Sale-Aware Recommendations**: Highlights current seasonal produce and active promotional discounts with strikethrough original prices.
 - **Stock-Gated Smart Substitutes**: Suggests healthy and relevant alternative swaps when list items are out of stock.
