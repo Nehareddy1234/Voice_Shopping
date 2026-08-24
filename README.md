@@ -93,11 +93,33 @@ The catalog is built from three open and public datasets deduplicated with singu
 
 ---
 
+## 🧠 Semantic Search Fallback & Embeddings Generation
+
+The application implements a fast **two-tier matching architecture**:
+1. **Primary Path (Heuristic NLP)**: Evaluates in $<1\text{ms}$ using deterministic token matching, multilingual alias maps, plural normalization, and fuzzy scoring.
+2. **Fallback Path (Client-Side Semantic Search)**: Triggered only when rule-based matching yields no confident result (e.g. indirect descriptions like *"that citrus fruit"* $\rightarrow$ *Oranges*, *"snack for my dog"* $\rightarrow$ *Dog Kibble*, *"organic salad greens"* $\rightarrow$ *Spring Mix Greens*).
+   - **Inference Engine**: `@xenova/transformers` (WASM / ONNX runtime).
+   - **Model**: `Xenova/bge-small-en-v1.5` quantized (`~33.8 MB` ONNX weights), lazy-loaded on first fallback invocation with live download progress.
+   - **Zero Runtime Computation for Catalog**: Catalog embeddings (384-dimensional normalized vectors) are strictly precomputed at build time.
+
+### 📦 Regenerating Catalog Embeddings
+
+Whenever catalog items, descriptions, or aliases are modified, regenerate the precomputed embedding vectors before building:
+
+```bash
+# Generate precomputed vector embeddings for all catalog items
+node scripts/generate-catalog-embeddings.js
+```
+
+This generates `src/assets/catalog-embeddings.json` and `public/catalog-embeddings.json` containing 384-dimensional normalized vector representations for every catalog entry.
+
+---
+
 ## 🧪 Verification & Testing
 
 The project includes an automated test runner (`scripts/verify-logic.jsx`) validating:
 - Catalog schema integrity (918 items, unique IDs, sizing, sale prices, stock statuses across all 12 departments).
 - Multilingual intent extraction for `ADD`, `REMOVE`, `UPDATE`, `SEARCH`, and `CLEAR` across English, Spanish, French, Hindi/Hinglish, and German.
-- Multi-item utterance parsing and restock phrasing.
-- Catalog fuzzy search, organic filtering, price caps, and singular/plural term normalization.
+- **Multi-Intent Command Splitting & Partial Failure**: Validates that compound action utterances (e.g. *"add milk and remove eggs"*, *"search for toothpaste under 5 and add bananas"*) split into distinct action clauses across 5 languages, capping at 5 sub-commands and executing valid operations even when individual clauses fail.
+- **Client-Side Semantic Embedding Fallback**: Validates that indirect descriptive utterances bypassing rule matching resolve accurately to target catalog items above the cosine similarity threshold ($\ge 0.60$).
 - LLM prompt generation, sanitization, and graceful fallback behaviors.
