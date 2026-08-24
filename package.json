@@ -8,9 +8,10 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test:logic": "esbuild scripts/verify-logic.jsx --bundle --platform=node --format=cjs --jsx=transform --outfile=.tmp-verify.cjs --log-level=warning && node .tmp-verify.cjs"
+    "test:logic": "esbuild scripts/verify-logic.jsx --bundle --platform=node --format=cjs --jsx=transform --external:@xenova/transformers --outfile=.tmp-verify.cjs --log-level=warning && node .tmp-verify.cjs"
   },
   "dependencies": {
+    "@xenova/transformers": "^2.17.2",
     "lucide-react": "^0.454.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
