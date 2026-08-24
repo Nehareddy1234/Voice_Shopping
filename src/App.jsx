@@ -2963,6 +2963,22 @@ export default function App() {
   const manualInputRef = useRef(null);
   const tts = useSpeechSynthesis();
 
+  const toastTimersRef = useRef(new Set());
+
+  const pushToast = useCallback((toast) => {
+    const id = uid();
+    setToasts((prev) => [...prev, { id, type: 'info', ...toast }]);
+    const timer = setTimeout(() => {
+      toastTimersRef.current.delete(timer);
+      setToasts((prev) => prev.filter((entry) => entry.id !== id));
+    }, 4200);
+    toastTimersRef.current.add(timer);
+  }, []);
+
+  const dismissToast = useCallback((id) => {
+    setToasts((prev) => prev.filter((entry) => entry.id !== id));
+  }, []);
+
   useEffect(() => {
     try {
       window.localStorage.setItem(LIST_KEY, JSON.stringify(list));
@@ -2990,22 +3006,6 @@ export default function App() {
 
   useEffect(() => () => {
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-  }, []);
-
-  const toastTimersRef = useRef(new Set());
-
-  const pushToast = useCallback((toast) => {
-    const id = uid();
-    setToasts((prev) => [...prev, { id, type: 'info', ...toast }]);
-    const timer = setTimeout(() => {
-      toastTimersRef.current.delete(timer);
-      setToasts((prev) => prev.filter((entry) => entry.id !== id));
-    }, 4200);
-    toastTimersRef.current.add(timer);
-  }, []);
-
-  const dismissToast = useCallback((id) => {
-    setToasts((prev) => prev.filter((entry) => entry.id !== id));
   }, []);
 
   useEffect(() => {
