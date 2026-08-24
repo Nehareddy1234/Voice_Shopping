@@ -148,7 +148,7 @@ npx vercel --prod
 
 Output directory: `dist`. No environment variables required — the optional Gemini API key (for enhanced NLP) is provided by the end user at runtime via the app's settings, not a build-time secret.
 
---
+---
 
 ## 📚 Data Sources & Attribution
 
