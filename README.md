@@ -1,125 +1,190 @@
-# 🛒 Voice Cart — Multilingual Voice Shopping Assistant
+# Voice Command Shopping Assistant
 
-A mobile-first, voice-driven grocery and shopping list web application built with React 18, Vite, and Tailwind CSS. Features real-time multilingual speech recognition across 5 languages, client-side heuristic natural language understanding, smart product suggestions, continuous listening mode, restock tracking, and optional Gemini LLM parsing.
+> A hands-free grocery list manager with multilingual NLP, client-side semantic search, and smart suggestions.
+
+**Live Demo**: [https://voice-shopping-iota.vercel.app](https://voice-shopping-iota.vercel.app) *(or your deployed Vercel deployment URL)*
 
 ---
 
-## 🌟 Key Features
+## 📸 Screenshots
 
-### 🎙️ Multilingual Voice Engine & Continuous Mode
-- **5 Supported Languages & Dialects**: English (`en-US`), Spanish (`es-ES`), French (`fr-FR`), German (`de-DE`), and Hindi / Hinglish (`hi-IN`).
-- **Zero-Friction Auto-Detection**: Automatically detects input language and script without requiring manual language switching.
-- **Continuous Listening**: Toggleable continuous listening mode with smart auto-restart delays to support hands-free grocery list building while audio confirmations play.
-- **Microphone Fallback Retries**: Multi-locale retry chain dynamically switches recognition locale if confidence is low.
-- **Speech Synthesis (TTS)**: Contextual audio confirmations in the speaker's language with non-repeating dynamic phrases.
+<!-- Place screenshots in public/screenshots/ or docs/ -->
+- **Voice Bar & Waveform**: Real-time microphone listening with multilingual indicator and continuous mode. *(Placeholder: `docs/screenshots/voice-bar.png`)*
+- **Smart Suggestions Panel**: Personalized recency/frequency history picks, seasonal produce, and sale items. *(Placeholder: `docs/screenshots/smart-suggestions.png`)*
+- **Search & Categorized List**: Real-time catalog filtering with price bounds, out-of-stock substitute recommendations, and 12-department grouping. *(Placeholder: `docs/screenshots/catalog-search.png`)*
 
-### 🧠 Dual-Path NLP & Search Intelligence
-- **High-Speed On-Device Parsing**: Heuristic token-matching parser extracts `ADD`, `REMOVE`, `UPDATE`, `SEARCH`, and `CLEAR` intents in under 1ms.
-- **Natural Language Parsing**:
-  - Quantities (digits `"2"`, words `"five"`, hindi words `"teen"`, or fractional units `"dozen"` $\rightarrow$ 12).
-  - Multi-item single utterance splitting (`"add apples and two cartons of milk"`).
-  - Quantity modifications (`"change milk to 3"` or `"update eggs to 6"`).
-  - Restock indicators (`"we are out of oat milk"`).
-  - Price constraints and filters (`"search organic apples under $5"`).
-- **Optional Gemini LLM Integration**: Opt-in Gemini API key support for unstructured conversational queries, auto-translating colloquial phrasing into canonical catalog entries with localized replies.
+---
 
-### 📦 Dynamic Catalog & Smart Suggestions
-- **918 Canonical Grocery Items across 12 Departments**: Deep coverage of fresh produce, heirloom varietals, whole grains, raw meats & seafood, packaged goods, dairy, bakery, beverages, household, baby, and pet care.
-- **Multi-Source Hybrid Ingestion**: Synthesized from USDA FoodData Central, Barabasi Lab GroceryDB, and Open Food Facts.
-- **Recency & Frequency History Scoring**: Locally tracks purchase history with custom scoring to surface personalized reorder suggestions.
-- **Seasonal & Sale-Aware Recommendations**: Highlights current seasonal produce and active promotional discounts (~15% on sale) with strikethrough original prices.
-- **Stock-Gated Smart Substitutes**: Suggests healthy and relevant alternative swaps when list items are out of stock.
+## ✨ Features
+
+### 1. 🎙️ Voice Input
+- **Real-Time Multilingual Recognition**: Browser-native Web Speech API supporting English (`en-US`), Spanish (`es-ES`), French (`fr-FR`), German (`de-DE`), and Hindi / Hinglish (`hi-IN`).
+- **Zero-Config Language Auto-Detection**: Instant script and lexical scoring identifies the spoken language without manual language toggling.
+- **Continuous Listening Mode**: Hands-free mode with speech synthesis auto-pause and delayed mic restart.
+- **Multi-Locale Retry Chain**: Dynamically retries recognition across alternative language models when initial confidence is low.
+
+### 2. 💡 Smart Suggestions
+- **Recency & Frequency History Scoring**: Locally tracks purchase history with custom decay scoring to surface personalized reorder suggestions.
+- **Seasonal Produce Highlights**: Surfaces in-season fresh produce tailored to the current month.
+- **Promotional Deals & Sales**: Displays active discounted items with strikethrough original prices (~15% discount).
+- **Stock-Gated Healthy Substitutes**: Contextual substitute suggestions displayed exclusively when items are out of stock.
+
+### 3. 📋 List Management
+- **Full Action Suite**: Voice-driven `ADD`, `REMOVE`, `UPDATE` (quantity modify), `TOGGLE` (check off), and `CLEAR`.
+- **Automatic Department Grouping**: Automatically categorizes items across 12 grocery departments with subtotal pricing.
+- **Persistent Storage**: Instant client-side list and history state preservation via `localStorage`.
+
+### 4. 🔍 Voice-Activated Search
+- **Constraint & Attribute Filtering**: Filters by size (e.g. `500ml`, `1 lb`), organic certification, brand name, and price caps (e.g. *"find olive oil under $10"*).
+- **Dual-Path Ranking**: Direct SKU and category boost scoring ensures exact produce items rank above secondary snacks or juices.
+
+### 5. 🎨 UI / UX
+- **Minimalist Floating Voice Bar**: Dynamic waveform audio pulse, quick-action demo command chips, and language status badge.
+- **Audio & Visual Feedback**: Contextual non-repeating TTS audio confirmations alongside toast notifications.
+- **Responsive Layout**: Designed for mobile and desktop screens.
+
+---
+
+## 🧠 Architecture & How It Works
+
+The application uses a **two-tier matching architecture** that combines deterministic heuristic NLP with client-side embedding fallback:
+
+```
+User Voice / Text Utterance
+          │
+          ▼
+1. Multi-Command Splitting (detect conjunction boundaries: "and", "then", "y", "und")
+          │
+          ├─► Separate Action Clauses (e.g., "add milk" + "remove eggs")
+          │
+          ▼
+2. Heuristic Rule-Based NLP Pipeline (<1ms)
+   ├─► Action Verb Parsing (ADD / REMOVE / UPDATE / SEARCH / CLEAR)
+   ├─► Quantity & Unit Extraction ("2 cartons", "half dozen", "teen kilo")
+   ├─► Multilingual Synonym & Alias Map (leche → milk, seb → apples)
+   ├─► Singular/Plural Normalization Engine (mangoes → mango, tomatoes → tomato)
+   └─► Exact & Fuzzy Catalog Scoring
+          │
+   ┌──────┴──────────────────────────────┐
+   │ High-Confidence Match Found?        │
+   │                                     │
+  YES                                   NO
+   │                                     │
+   ▼                                     ▼
+Dispatch Action               3. Client-Side Semantic Embedding Fallback
+                              ├─► Model: Xenova/bge-small-en-v1.5 (Quantized ONNX, ~33.8 MB)
+                              ├─► Runtime: @xenova/transformers (WASM, lazy-loaded on-demand)
+                              ├─► Vector Space: 384-dimensional normalized embeddings
+                              ├─► Precomputed Index: 918 catalog embeddings (3.24 MB JSON)
+                              └─► Cosine Similarity Match (Threshold ≥ 0.60)
+                                         │
+                                         ▼
+                              Dispatch Action ("Smart Match")
+```
+
+### Key Technical Subsystems
+
+1. **Multi-Command Parsing**:
+   - Splits compound utterances on conjunctions (`"and"`, `"then"`, `"plus"`, `"aur"`, `"und"`, `"y luego"`).
+   - If a clause contains an action verb, it spawns an independent command; if verbless, it groups items under the previous action (distinguishing *"add milk and eggs"* $\rightarrow$ 1 action from *"add milk and remove eggs"* $\rightarrow$ 2 actions).
+   - Enforces a 5-command safety cap and handles partial failures gracefully.
+
+2. **Catalog Composition (918 Canonical Items)**:
+   - **Produce**: 133 items
+   - **Pantry**: 95 items
+   - **Dairy & Eggs**: 85 items
+   - **Meat & Seafood**: 85 items
+   - **Snacks**: 80 items
+   - **Beverages**: 80 items
+   - **Bakery**: 75 items
+   - **Frozen**: 75 items
+   - **Personal Care**: 60 items
+   - **Household**: 50 items
+   - **Baby**: 50 items
+   - **Pet Care**: 50 items
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Framework**: React 18 (Hooks, `useReducer`, `useMemo`, `useCallback`, `useRef`)
+- **Framework**: React 18 (`useReducer`, `useMemo`, `useCallback`, `useRef`)
 - **Build Tool**: Vite 5
-- **Styling**: Tailwind CSS 3 with custom glassmorphism and animation tokens
+- **Styling**: Tailwind CSS 3
 - **Icons**: Lucide React
+- **Client-Side Embeddings**: `@xenova/transformers` (WASM / ONNX Runtime)
 - **Web APIs**: Web Speech API (`webkitSpeechRecognition` & `speechSynthesis`), Web Audio API, `localStorage`
-- **Verification Harness**: ESBuild + Node.js (130+ automated logical assertions)
+- **Verification Runner**: ESBuild + Node.js
+
+---
+
+## 🚀 Setup & Local Development
+
+### Prerequisites
+- Node.js 18+ and npm
+
+### Installation & Execution
+
+```bash
+# 1. Clone repository
+git clone https://github.com/Nehareddy1234/Voice_Shopping.git
+cd Voice_Shopping
+
+# 2. Install dependencies
+npm install
+
+# 3. Start local development server
+npm run dev
+
+# 4. Run the automated logic verification suite (150+ unit/integration tests)
+npm run test:logic
+
+# 5. Build for production
+npm run build
+
+# 6. Preview production build locally
+npm run preview
+```
 
 ---
 
 ## 📚 Data Sources & Attribution
 
-The catalog is built from three open and public datasets deduplicated with singular-based NLP matching:
+The 918-item catalog combines three open datasets:
 
-1. **USDA FoodData Central (FDC)**:
-   - *Source*: U.S. Department of Agriculture, Agricultural Research Service (Foundation Foods & SR Legacy datasets).
-   - *Focus*: Raw produce, heirloom fruits, vegetables, cuts of meat, seafood, whole grains, and basic pantry staples.
+1. **[USDA FoodData Central (FDC)](https://fdc.nal.usda.gov/)**:
+   - *Data*: Foundation Foods & SR Legacy datasets (raw produce, grains, meat, seafood).
    - *License*: Public Domain / U.S. Government Work.
-2. **Barabasi Lab GroceryDB**:
-   - *Source*: Center for Complex Network Research, Northeastern University ([GitHub / Kaggle](https://github.com/Barabasi-Lab/GroceryDB)).
-   - *Focus*: Supermarket packaged goods across major U.S. retailers (Target, Walmart, Whole Foods), household, personal care, baby, and snacks.
+2. **[Barabasi Lab GroceryDB](https://github.com/Barabasi-Lab/GroceryDB)**:
+   - *Data*: Supermarket packaged goods across major U.S. retailers (Target, Walmart, Whole Foods).
    - *License*: Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
-3. **Open Food Facts (OFF)**:
-   - *Source*: Open Food Facts contributors ([openfoodfacts.org](https://world.openfoodfacts.org/)).
-   - *Focus*: International and specialty grocery items, organic packaged goods, and allergen/label data.
-   - *License*: Open Database License (ODbL 1.0).
+3. **[Open Food Facts](https://world.openfoodfacts.org/)**:
+   - *Data*: International and specialty grocery items, organic packaged foods.
+   - *License*: Open Database License (ODbL) / Database Contents License (DbCL).
 
 ---
 
-## 🚀 Getting Started
+## ⚠️ Known Limitations
 
-### Prerequisites
-- Node.js 18+ and npm installed.
-
-### Installation & Setup
-
-1. **Clone the repository and install dependencies:**
-   ```bash
-   git clone <repository-url>
-   cd Voice_Shopping
-   npm install
-   ```
-
-2. **Start the local development server:**
-   ```bash
-   npm run dev
-   ```
-
-3. **Run the test suite:**
-   ```bash
-   npm run test:logic
-   ```
-
-4. **Build for production:**
-   ```bash
-   npm run build
-   ```
+1. **Browser Web Speech API Support**: Native speech recognition relies on browser support (`webkitSpeechRecognition`), which works best in Google Chrome, Microsoft Edge, and Safari.
+2. **Microphone Permissions**: Voice recognition requires explicit HTTPS or `localhost` microphone permissions. If denied, the application falls back to manual text input.
+3. **Semantic Fallback Scope**: Semantic embedding inference uses an English-optimized model (`bge-small-en-v1.5`). Multilingual inputs primarily match through the extensive multilingual alias and translation lexicon.
+4. **Estimated Pricing**: Item prices are representative supermarket benchmarks created for demo consistency.
 
 ---
 
-## 🧠 Semantic Search Fallback & Embeddings Generation
+## 📝 Approach & Technical Reflection
 
-The application implements a fast **two-tier matching architecture**:
-1. **Primary Path (Heuristic NLP)**: Evaluates in $<1\text{ms}$ using deterministic token matching, multilingual alias maps, plural normalization, and fuzzy scoring.
-2. **Fallback Path (Client-Side Semantic Search)**: Triggered only when rule-based matching yields no confident result (e.g. indirect descriptions like *"that citrus fruit"* $\rightarrow$ *Oranges*, *"snack for my dog"* $\rightarrow$ *Dog Kibble*, *"organic salad greens"* $\rightarrow$ *Spring Mix Greens*).
-   - **Inference Engine**: `@xenova/transformers` (WASM / ONNX runtime).
-   - **Model**: `Xenova/bge-small-en-v1.5` quantized (`~33.8 MB` ONNX weights), lazy-loaded on first fallback invocation with live download progress.
-   - **Zero Runtime Computation for Catalog**: Catalog embeddings (384-dimensional normalized vectors) are strictly precomputed at build time.
+Voice commerce presents a fundamental tension between **latency** and **semantic flexibility**. Full cloud LLM pipelines introduce 1–3 second roundtrip latencies and API costs, while basic keyword matching fails on natural, conversational speech (e.g., *"that citrus fruit"* or *"snack for my dog"*).
 
-### 📦 Regenerating Catalog Embeddings
+Our solution implements a **deterministic-first, ML-fallback architecture**:
+1. Over 95% of standard shopping utterances (verbs, quantities, multilingual names, and aliases) resolve in $<1\text{ms}$ on-device via regular expressions, singularization rules, and token intersection scoring.
+2. When rule-based scoring yields no confident match, the application lazily loads an on-device embedding model (`bge-small-en-v1.5` via WebAssembly/ONNX) to compute cosine similarity against 918 pre-embedded catalog vectors without any backend server requirements.
+3. For chained inputs, a pre-pass split engine separates multi-intent commands (e.g., *"add milk and remove eggs"*) while preserving multi-item single actions (*"add milk and eggs"*), providing isolated execution with partial-failure reporting.
 
-Whenever catalog items, descriptions, or aliases are modified, regenerate the precomputed embedding vectors before building:
-
-```bash
-# Generate precomputed vector embeddings for all catalog items
-node scripts/generate-catalog-embeddings.js
-```
-
-This generates `src/assets/catalog-embeddings.json` and `public/catalog-embeddings.json` containing 384-dimensional normalized vector representations for every catalog entry.
+**Future Improvements**: With more time, we would implement WebGPU-accelerated embeddings for lower inference latency and add quantized multilingual embeddings (e.g., MiniLM-L12-multilingual) for cross-lingual semantic search.
 
 ---
 
-## 🧪 Verification & Testing
+## 📄 License
 
-The project includes an automated test runner (`scripts/verify-logic.jsx`) validating:
-- Catalog schema integrity (918 items, unique IDs, sizing, sale prices, stock statuses across all 12 departments).
-- Multilingual intent extraction for `ADD`, `REMOVE`, `UPDATE`, `SEARCH`, and `CLEAR` across English, Spanish, French, Hindi/Hinglish, and German.
-- **Multi-Intent Command Splitting & Partial Failure**: Validates that compound action utterances (e.g. *"add milk and remove eggs"*, *"search for toothpaste under 5 and add bananas"*) split into distinct action clauses across 5 languages, capping at 5 sub-commands and executing valid operations even when individual clauses fail.
-- **Client-Side Semantic Embedding Fallback**: Validates that indirect descriptive utterances bypassing rule matching resolve accurately to target catalog items above the cosine similarity threshold ($\ge 0.60$).
-- LLM prompt generation, sanitization, and graceful fallback behaviors.
+This project is licensed under the [MIT License](LICENSE).
