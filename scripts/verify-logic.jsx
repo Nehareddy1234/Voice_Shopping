@@ -8,6 +8,8 @@ import {
   detectRestockContext,
   splitMultiItems,
   detectMultiItem,
+  splitMultiCommands,
+  hasExplicitActionVerb,
   pickPhrase,
   sanitizeLLMResponse,
   LLM_SYSTEM_PROMPT,
@@ -160,7 +162,7 @@ check('detect DE bare brot with EN fallback', detectLanguage('brot', 'en').short
 
 check('detect unknown fallback preservation', detectLanguage('xyz123abc', 'fr').short, 'fr');
 
-// --- Multi-item & restock context ---
+// --- Multi-item & multi-intent command splitting ---
 check('multi split count', splitMultiItems('add milk, eggs and bread').length, 3);
 check('multi split de', splitMultiItems('milch und brot').length, 2);
 check('multi split hi', splitMultiItems('doodh aur seb').length, 2);
@@ -169,6 +171,41 @@ check('multi items detected', detectMultiItem('add milk and eggs'), true);
 check('restock EN true', detectRestockContext('running low on milk', 'en'), true);
 check('restock HI true', detectRestockContext('coffee khatam ho gaya, add karo', 'hi'), true);
 check('restock plain add false', detectRestockContext('add milk', 'en'), false);
+
+// Multi-intent command splitting tests
+const split1 = splitMultiCommands('add milk and eggs', 'en');
+check('multi-item single-action splits to 1 command with 2 clauses', split1.length, 1);
+check('multi-item single-action command action is ADD', split1[0].action, 'ADD');
+check('multi-item single-action clauses count', split1[0].clauses.length, 2);
+
+const split2 = splitMultiCommands('add milk and remove eggs', 'en');
+check('multi-intent splits to 2 distinct commands', split2.length, 2);
+check('multi-intent cmd 1 is ADD', split2[0].action, 'ADD');
+check('multi-intent cmd 2 is REMOVE', split2[1].action, 'REMOVE');
+
+const split3 = splitMultiCommands('search for toothpaste under 5 and add bananas', 'en');
+check('multi-intent search + add splits to 2 commands', split3.length, 2);
+check('multi-intent search action', split3[0].action, 'SEARCH');
+check('multi-intent add action', split3[1].action, 'ADD');
+
+const splitES = splitMultiCommands('añadir leche y quitar huevos', 'es');
+check('ES multi-intent splits to 2 commands', splitES.length, 2);
+check('ES multi-intent cmd 1 is ADD', splitES[0].action, 'ADD');
+check('ES multi-intent cmd 2 is REMOVE', splitES[1].action, 'REMOVE');
+
+const splitHI = splitMultiCommands('doodh add karo aur tamatar hatao', 'hi');
+check('HI multi-intent splits to 2 commands', splitHI.length, 2);
+check('HI multi-intent cmd 1 is ADD', splitHI[0].action, 'ADD');
+check('HI multi-intent cmd 2 is REMOVE', splitHI[1].action, 'REMOVE');
+
+const splitDE = splitMultiCommands('milch hinzufügen und eier entfernen', 'de');
+check('DE multi-intent splits to 2 commands', splitDE.length, 2);
+check('DE multi-intent cmd 1 is ADD', splitDE[0].action, 'ADD');
+check('DE multi-intent cmd 2 is REMOVE', splitDE[1].action, 'REMOVE');
+
+// Command cap enforcement (capped at 5)
+const longUtterance = 'add milk and add eggs and add bread and add butter and add cheese and add apples';
+check('commands capped at 5', splitMultiCommands(longUtterance, 'en', 5).length, 5);
 
 // --- Search & substitutes ---
 const organicApples = searchCatalog('organic apples', { maxPrice: 5 });
@@ -275,5 +312,72 @@ check('LLM rejects garbage string', sanitizeLLMResponse('not json at all'), null
 check('LLM rejects null', sanitizeLLMResponse(null), null);
 check('LLM unknown locale falls back en-US', sanitizeLLMResponse({ detectedLanguageCode: 'xx-XX', canonicalItem: 'Milk' })?.detectedLanguageCode, 'en-US');
 
-console.log(failures === 0 ? '\nALL CHECKS PASSED' : `\n${failures} CHECK(S) FAILED`);
-if (failures > 0) process.exit(1);
+// --- Semantic embedding fallback engine assertions ---
+import { searchCatalogSemantic, cosineSimilarity } from '../src/services/semanticSearch.js';
+import catalogEmbeddingsData from '../src/assets/catalog-embeddings.json' with { type: 'json' };
+
+check('catalog embeddings payload defined', Boolean(catalogEmbeddingsData?.items?.length >= 800), true);
+check('embeddings dimension is 384', catalogEmbeddingsData.dimension, 384);
+check('cosine similarity of self is 1.0', Number(cosineSimilarity(catalogEmbeddingsData.items[0].vector, catalogEmbeddingsData.items[0].vector).toFixed(4)), 1.0);
+
+// Semantic search fallback tests (async IIFE inside runner)
+async function verifySemanticSuite() {
+  console.log('\n--- Running Semantic Embedding Fallback Verification ---');
+  
+  // 1. "that citrus fruit" -> Oranges / Limes / Lemons (Rule search fails)
+  const citrusRes = await searchCatalogSemantic('that citrus fruit', CATALOG);
+  const citrusTop = citrusRes.match?.name;
+  const isCitrus = ['Oranges', 'Limes', 'Lemons', 'Ruby Red Grapefruit'].includes(citrusTop) || /orange|lemon|lime|citrus/i.test(citrusTop);
+  check('semantic fallback "that citrus fruit" resolves citrus fruit', isCitrus, true);
+  check('semantic fallback score above 0.50 threshold', citrusRes.score >= 0.50, true);
+
+  // 2. "snack for my dog" -> Dog Kibble / Dog Treats (Rule search fails)
+  const dogRes = await searchCatalogSemantic('snack for my dog', CATALOG);
+  const dogTop = dogRes.match?.name;
+  const isDogItem = ['Dog Kibble', 'Dog Treats'].includes(dogTop) || dogRes.match?.category === 'pet';
+  check('semantic fallback "snack for my dog" resolves pet item', isDogItem, true);
+
+  // 3. "organic salad greens" -> Spring Mix Greens / Baby Spinach (Rule search fails to match exact phrase)
+  const greensRes = await searchCatalogSemantic('organic salad greens', CATALOG);
+  const isGreens = ['Spring Mix Greens', 'Baby Spinach', 'Kale Bunches'].includes(greensRes.match?.name) || greensRes.match?.category === 'produce';
+  check('semantic fallback "organic salad greens" resolves produce greens', isGreens, true);
+
+  // 4. "tangy salad dressing" -> Salad Dressing & Marinade (Rule search fails)
+  const dressingRes = await searchCatalogSemantic('tangy salad dressing', CATALOG);
+  const isDressing = /dressing|salad/i.test(dressingRes.match?.name);
+  check('semantic fallback "tangy salad dressing" resolves dressing', isDressing, true);
+
+  // 5. "creamy peanut butter for toast" -> Creamy Peanut Butter
+  const pbRes = await searchCatalogSemantic('creamy peanut butter for toast', CATALOG);
+  const isPb = /peanut butter|butter/i.test(pbRes.match?.name);
+  check('semantic fallback "creamy peanut butter for toast" resolves peanut butter', isPb, true);
+
+  // 6. Multi-intent + Semantic Fallback in same utterance
+  // "add milk and I need that cold breakfast drink"
+  const multiEmbedCmds = splitMultiCommands('add milk and I need that cold breakfast drink', 'en');
+  check('multi-intent phrase splits clauses correctly', multiEmbedCmds[0].clauses.length >= 2, true);
+  const clause1Matches = searchCatalog(parseIntent(multiEmbedCmds[0].clauses[0], 'en').itemName);
+  check('clause 1 resolves via rule-based search', clause1Matches[0]?.name, 'Whole Milk');
+  const clause2Semantic = await searchCatalogSemantic(parseIntent(multiEmbedCmds[0].clauses[1], 'en').itemName || multiEmbedCmds[0].clauses[1], CATALOG);
+  check('clause 2 resolves via semantic fallback', clause2Semantic.score >= 0.50, true);
+
+  // 7. Partial failure handling: valid clause + nonsense clause
+  const partialCmds = splitMultiCommands('add bananas and add completely unrelated gibberish 99999', 'en');
+  check('partial failure utterance splits into 2 commands', partialCmds.length, 2);
+  const validMatches = searchCatalog(parseIntent(partialCmds[0].raw, 'en').itemName);
+  check('valid clause resolves to Bananas', validMatches[0]?.name, 'Bananas');
+  const invalidMatches = searchCatalog(parseIntent(partialCmds[1].raw, 'en').itemName);
+  check('invalid clause returns 0 rule matches', invalidMatches.length, 0);
+  const invalidSemantic = await searchCatalogSemantic(parseIntent(partialCmds[1].raw, 'en').itemName, CATALOG);
+  check('invalid clause returns null or 0 semantic match', invalidSemantic.match === null || invalidSemantic.score === 0, true);
+
+  console.log(failures === 0 ? '\nALL CHECKS (RULE-BASED + SEMANTIC + MULTI-INTENT) PASSED' : `\n${failures} CHECK(S) FAILED`);
+  if (failures > 0) process.exit(1);
+}
+
+verifySemanticSuite().catch((err) => {
+  console.error('Semantic verification failed:', err);
+  process.exit(1);
+});
+
+

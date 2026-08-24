@@ -11,6 +11,8 @@ import {
   Apple,
   Baby,
   Beef,
+  Bot,
+  Brain,
   Check,
   CheckCircle2,
   ChevronDown,
@@ -44,6 +46,12 @@ import {
   Wheat,
   X,
 } from 'lucide-react';
+import {
+  searchCatalogSemantic,
+  onModelProgress,
+  isModelLoaded,
+  isModelLoading,
+} from './services/semanticSearch.js';
 
 /* ============================================================================
  * Voice Cart — Voice Command Shopping Assistant
@@ -1535,6 +1543,28 @@ export function searchCatalog(rawQuery, { maxPrice = null } = {}) {
     .map(({ score, catalogIndex, ...item }) => item);
 }
 
+/**
+ * Unified search helper: checks rule-based catalog matching first,
+ * falling back to semantic embedding search if rule-based returns no confident match.
+ */
+export async function searchCatalogWithFallback(rawQuery, { maxPrice = null, isOrganic = null, threshold = 0.50 } = {}) {
+  const ruleResults = searchCatalog(rawQuery, { maxPrice });
+  if (ruleResults.length > 0) {
+    return { matches: ruleResults, topMatch: ruleResults[0], isSemantic: false, score: 1.0 };
+  }
+  const semanticResult = await searchCatalogSemantic(rawQuery, CATALOG, {
+    maxPrice,
+    isOrganic,
+    similarityThreshold: threshold,
+  });
+  return {
+    matches: semanticResult.matches,
+    topMatch: semanticResult.match,
+    isSemantic: true,
+    score: semanticResult.score,
+  };
+}
+
 export function findSubstitute(product) {
   if (!product?.substitutes?.length) return null;
   for (const altName of product.substitutes) {
@@ -1636,6 +1666,69 @@ export function splitMultiItems(text) {
 }
 
 export const detectMultiItem = (text) => splitMultiItems(text).length > 1;
+
+/**
+ * Multi-Intent Command Splitting Engine
+ * Splits compound utterances across conjunctions and clause boundaries,
+ * detecting independent ACTION clauses without regressing multi-item lists.
+ */
+export const COMMAND_DELIMITERS = /(?:[,;.]+\s*(?:and\s+then|then|and\s+also|also|and|plus|y\s+luego|luego|y\s+tambien|tambien|y|et\s+ensuite|ensuite|et\s+aussi|aussi|et|und\s+dann|dann|und\s+auch|auch|und|phir|aur\s+phir|aur\s+bhi|aur|bhi)?\s+|(?<=\S)\s+(?:and\s+then|then|and\s+also|also|and|plus|y\s+luego|luego|y\s+tambien|tambien|y|et\s+ensuite|ensuite|et\s+aussi|aussi|et|und\s+dann|dann|und\s+auch|auch|und|phir|aur\s+phir|aur\s+bhi|aur|bhi)\s+)/i;
+
+export function hasExplicitActionVerb(clause, lang = 'en') {
+  const norm = normalize(clause);
+  if (!norm) return null;
+  const langs = [lang, ...Object.keys(ACTION_VERBS.add).filter((l) => l !== lang)];
+  for (const action of ['clear', 'search', 'remove', 'update', 'add']) {
+    for (const l of langs) {
+      for (const verb of ACTION_VERBS[action][l] || []) {
+        const v = normalize(verb);
+        if (!v) continue;
+        const verbRegex = new RegExp(`(?<![\\p{L}\\p{N}])${v.replace(/\\s+/g, '\\s+')}(?![\\p{L}\\p{N}])`, 'u');
+        if (verbRegex.test(norm)) return action.toUpperCase();
+      }
+    }
+  }
+  return null;
+}
+
+export function splitMultiCommands(rawText, lang = 'en', maxCommands = 5) {
+  const text = String(rawText || '').trim();
+  if (!text) return [];
+
+  const rawClauses = text
+    .split(COMMAND_DELIMITERS)
+    .map((c) => c.trim())
+    .filter(Boolean);
+
+  if (rawClauses.length <= 1) {
+    const act = hasExplicitActionVerb(text, lang);
+    return [{ text, action: act || 'ADD', isExplicitAction: Boolean(act), raw: text }];
+  }
+
+  const commands = [];
+  let currentGroup = null;
+
+  for (let i = 0; i < rawClauses.length; i++) {
+    const clause = rawClauses[i];
+    const explicitAction = hasExplicitActionVerb(clause, lang);
+
+    if (explicitAction || !currentGroup) {
+      currentGroup = {
+        action: explicitAction || 'ADD',
+        isExplicitAction: Boolean(explicitAction),
+        clauses: [clause],
+        raw: clause,
+      };
+      commands.push(currentGroup);
+    } else {
+      // No explicit verb: group with previous command as an additional item/clause
+      currentGroup.clauses.push(clause);
+      currentGroup.raw += ', ' + clause;
+    }
+  }
+
+  return commands.slice(0, maxCommands);
+}
 
 /* ---------------------------------------------------------------------------
  * LLM AUTO-DETECTION ENGINE (optional Gemini refinement)
@@ -2044,7 +2137,12 @@ function Toast({ toast, onDismiss }) {
         <p className="text-sm font-semibold">{toast.title}</p>
         {toast.message && <p className="mt-0.5 text-xs opacity-80">{toast.message}</p>}
       </div>
-      {toast.detected ? (
+      {toast.smartMatch ? (
+        <span className="inline-flex shrink-0 animate-badge-pop items-center gap-1 rounded-full bg-violet-100/90 px-2.5 py-1 text-[10px] font-bold text-violet-800 ring-1 ring-violet-300 shadow-sm">
+          <Brain className="h-3 w-3 text-violet-600" />
+          Smart Match {toast.score ? `(${Math.round(toast.score * 100)}%)` : ''}
+        </span>
+      ) : toast.detected ? (
         <span className="inline-flex shrink-0 animate-badge-pop items-center gap-1 rounded-full bg-white/80 px-2.5 py-1 text-[10px] font-bold text-slate-700 ring-1 ring-slate-200 shadow-sm">
           🌐 Auto-Detected: {toast.detected.label} ({toast.detected.code})
         </span>
@@ -2365,7 +2463,7 @@ function SearchView({ results, query, maxPrice, onAdd, booting }) {
 
 function SearchResultCard({ item, onAdd }) {
   return (
-    <div className="flex flex-col rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200/60 transition-shadow duration-200 hover:shadow-md animate-fade-in-down">
+    <div className={`flex flex-col rounded-2xl bg-white p-5 shadow-sm ring-1 ${item.isSemanticMatch ? 'ring-violet-300/80 bg-gradient-to-br from-white via-violet-50/20 to-white' : 'ring-slate-200/60'} transition-shadow duration-200 hover:shadow-md animate-fade-in-down`}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-slate-800">{item.name}</p>
@@ -2378,6 +2476,11 @@ function SearchResultCard({ item, onAdd }) {
         {item.isOrganic && (
           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
             <Leaf className="h-3 w-3" /> Organic
+          </span>
+        )}
+        {item.isSemanticMatch && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 ring-1 ring-violet-200">
+            <Brain className="h-3 w-3" /> Smart Match {item.similarityScore ? `(${Math.round(item.similarityScore * 100)}%)` : ''}
           </span>
         )}
         {!item.inStock && (
@@ -2524,10 +2627,15 @@ function SuggestionsPanel({ list, history, onPick }) {
  * -------------------------------------------------------------------------*/
 
 const DEMO_COMMANDS = [
+  'add milk and remove eggs',
+  'search for toothpaste under 5 and add bananas',
   'Yo, add 2 cartons of oat milk',
   'Pyaz teen kilo add karo',
   'Find organic apples under $5',
-  'Añadir leche',
+  'that citrus fruit',
+  'snack for my dog',
+  'organic salad greens',
+  'Añadir leche y quitar huevos',
   'Ajouter du pain',
   'Füge Kaffee hinzu',
   'Running low on coffee beans',
@@ -2868,22 +2976,20 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    return onModelProgress((info) => {
+      if (info.stage === 'downloading' && info.progress && Math.round(info.progress) % 25 === 0) {
+        pushToast({
+          type: 'info',
+          title: 'Initializing Smart Search',
+          message: info.message || 'Downloading model weights for on-device fallback…',
+        });
+      }
+    });
+  }, [pushToast]);
+
   useEffect(() => () => {
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-  }, []);
-
-  // Brief skeleton while the search "runs", then reveal results — keeps the
-  // SearchView loading state honest instead of hardcoded off.
-  const runSearch = useCallback((query, maxPrice) => {
-    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-    setSearchBooting(true);
-    setView('search');
-    searchTimerRef.current = window.setTimeout(() => {
-      setSearchQuery(query);
-      setSearchMaxPrice(maxPrice);
-      setSearchResults(searchCatalog(query, { maxPrice }));
-      setSearchBooting(false);
-    }, 450);
   }, []);
 
   const toastTimersRef = useRef(new Set());
@@ -2951,7 +3057,7 @@ export default function App() {
   );
 
   const addProduct = useCallback(
-    (product, quantity = 1, unit = null, { lang = null, phraseCategory = 'add', silent = false, detected = null } = {}) => {
+    (product, quantity = 1, unit = null, { lang = null, phraseCategory = 'add', silent = false, detected = null, smartMatch = false, score = null } = {}) => {
       dispatch({ type: 'ADD', product, quantity, unit });
       recordHistory(product, quantity);
       if (silent || !lang) return;
@@ -2959,8 +3065,10 @@ export default function App() {
       const subNote = sub ? ` If it’s sold out, try ${sub.name}.` : '';
       pushToast({
         type: 'success',
-        title: `Added ${product.name}`,
+        title: smartMatch ? `Smart Match: Added ${product.name}` : `Added ${product.name}`,
         message: `${quantity} × ${unit || product.unit} · ${formatPrice(product.price)} each${subNote}`,
+        smartMatch,
+        score,
         ...(detected ? { detected } : { langBadge: `${lang.flag} ${lang.label}` }),
       });
       tts.speak(pickPhrase(lang.short, phraseCategory, product.name, quantity), lang.code);
@@ -2968,8 +3076,42 @@ export default function App() {
     [pushToast, recordHistory, tts],
   );
 
+  // Brief skeleton while the search "runs", then reveal results — keeps the
+  // SearchView loading state honest instead of hardcoded off.
+  const runSearch = useCallback(async (query, maxPrice) => {
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    setSearchBooting(true);
+    setView('search');
+    
+    // First, run rule-based search
+    const ruleMatches = searchCatalog(query, { maxPrice });
+    if (ruleMatches.length > 0) {
+      searchTimerRef.current = window.setTimeout(() => {
+        setSearchQuery(query);
+        setSearchMaxPrice(maxPrice);
+        setSearchResults(ruleMatches);
+        setSearchBooting(false);
+      }, 300);
+      return;
+    }
+
+    // Fallback: semantic search
+    try {
+      const semanticResult = await searchCatalogSemantic(query, CATALOG, { maxPrice });
+      setSearchQuery(query);
+      setSearchMaxPrice(maxPrice);
+      setSearchResults(semanticResult.matches);
+    } catch {
+      setSearchQuery(query);
+      setSearchMaxPrice(maxPrice);
+      setSearchResults([]);
+    } finally {
+      setSearchBooting(false);
+    }
+  }, []);
+
   const parseOnDevice = useCallback(
-    (rawText, hintedShort = null) => {
+    async (rawText, hintedShort = null) => {
       const trimmed = String(rawText || '').trim();
       if (!trimmed) return;
       setVoiceState('processing');
@@ -2985,128 +3127,334 @@ export default function App() {
           ? { detected: { label: lang.label, code: lang.code } }
           : { langBadge: `${lang.flag} ${lang.label}` };
 
-      const intent = parseIntent(trimmed, lang.short);
-      const restock = detectRestockContext(trimmed, lang.short);
       const finish = () => setVoiceState('idle');
 
-      const notFound = () => {
-        pushToast({ type: 'error', title: 'Item not found', message: `No match for “${intent.itemName || trimmed}” in the catalog.` });
-        tts.speak(pickPhrase(lang.short, 'notFound'), lang.code);
+      // 1. Multi-Command Splitting Pre-Pass
+      const rawCommands = splitMultiCommands(trimmed, lang.short);
+      if (rawCommands.length > 5) {
+        pushToast({
+          type: 'error',
+          title: 'Too many commands',
+          message: 'Please provide at most 5 commands in a single utterance.',
+          ...langTag,
+        });
+        tts.speak('Please give fewer commands at once.', lang.code);
         finish();
+        return;
+      }
+
+      // Check if this is a single command without sub-command action splits
+      const isMultiCommand = rawCommands.length > 1;
+
+      const resultsSummary = {
+        successes: [],
+        failures: [],
       };
 
-      switch (intent.action) {
-        case 'ADD': {
-          const segments = splitMultiItems(trimmed);
-          if (segments.length > 1) {
-            const added = [];
-            for (const segment of segments) {
-              const segIntent = parseIntent(segment, lang.short);
-              if (!segIntent.itemName) continue;
-              const results = searchCatalog(segIntent.itemName);
-              if (results.length > 0) {
-                dispatch({ type: 'ADD', product: results[0], quantity: segIntent.quantity, unit: segIntent.unit !== 'pcs' ? segIntent.unit : undefined });
-                recordHistory(results[0], segIntent.quantity);
-                added.push(results[0]);
+      for (let cmdIdx = 0; cmdIdx < rawCommands.length; cmdIdx++) {
+        const cmd = rawCommands[cmdIdx];
+        const cmdText = cmd.raw || cmd.text;
+        const intent = parseIntent(cmdText, lang.short);
+        const restock = detectRestockContext(cmdText, lang.short);
+
+        // If intent.action couldn't be parsed, fallback to command action or ADD
+        const action = intent.action || cmd.action || 'ADD';
+
+        switch (action) {
+          case 'ADD': {
+            const segments = cmd.clauses && cmd.clauses.length > 1 ? cmd.clauses : splitMultiItems(cmdText);
+            if (segments.length > 1) {
+              const added = [];
+              for (const segment of segments) {
+                const segIntent = parseIntent(segment, lang.short);
+                if (!segIntent.itemName) continue;
+                let results = searchCatalog(segIntent.itemName);
+                let smartMatch = false;
+                let score = null;
+                if (results.length === 0) {
+                  try {
+                    const semantic = await searchCatalogSemantic(segIntent.itemName, CATALOG);
+                    if (semantic.match) {
+                      results = [semantic.match];
+                      smartMatch = true;
+                      score = semantic.score;
+                    }
+                  } catch {
+                    /* ignore */
+                  }
+                }
+                if (results.length > 0) {
+                  dispatch({
+                    type: 'ADD',
+                    product: results[0],
+                    quantity: segIntent.quantity,
+                    unit: segIntent.unit !== 'pcs' ? segIntent.unit : undefined,
+                  });
+                  recordHistory(results[0], segIntent.quantity);
+                  added.push({ product: results[0], smartMatch, score, quantity: segIntent.quantity });
+                } else {
+                  resultsSummary.failures.push({
+                    action: 'ADD',
+                    query: segIntent.itemName || segment,
+                    reason: `No match for “${segIntent.itemName || segment}”`,
+                  });
+                }
+              }
+              if (added.length > 0) {
+                const uniqueNames = [...new Map(added.map((item) => [item.product.id, item.product.name])).values()];
+                resultsSummary.successes.push({
+                  action: 'ADD',
+                  title: `${uniqueNames.length} item${uniqueNames.length === 1 ? '' : 's'} added`,
+                  detail: uniqueNames.join(', '),
+                  smartMatch: added.some((a) => a.smartMatch),
+                  items: added,
+                });
+                if (!isMultiCommand) {
+                  pushToast({
+                    type: 'success',
+                    title: `${uniqueNames.length} item${uniqueNames.length === 1 ? '' : 's'} added to list`,
+                    message: uniqueNames.join(', '),
+                    ...langTag,
+                  });
+                  tts.speak(
+                    pickPhrase(lang.short, uniqueNames.length > 1 ? 'addMulti' : restock ? 'addRestock' : 'add', uniqueNames[0]),
+                    lang.code,
+                  );
+                }
+              }
+              break;
+            }
+
+            if (!intent.itemName) {
+              resultsSummary.failures.push({
+                action: 'ADD',
+                query: cmdText,
+                reason: `No item specified in “${cmdText}”`,
+              });
+              break;
+            }
+
+            // 1. Primary rule-based path
+            let results = searchCatalog(intent.itemName);
+            let smartMatch = false;
+            let matchScore = null;
+
+            // 2. Semantic fallback
+            if (results.length === 0) {
+              try {
+                const semantic = await searchCatalogSemantic(intent.itemName || cmdText, CATALOG);
+                if (semantic.match) {
+                  results = [semantic.match];
+                  smartMatch = true;
+                  matchScore = semantic.score;
+                }
+              } catch (err) {
+                console.warn('Semantic search fallback error:', err);
               }
             }
-            if (added.length === 0) {
-              notFound();
-              return;
+
+            if (results.length === 0) {
+              resultsSummary.failures.push({
+                action: 'ADD',
+                query: intent.itemName || cmdText,
+                reason: `No match for “${intent.itemName || cmdText}” in catalog`,
+              });
+              break;
             }
-            const uniqueNames = [...new Map(added.map((item) => [item.id, item.name])).values()];
-            pushToast({
-              type: 'success',
-              title: `${uniqueNames.length} item${uniqueNames.length === 1 ? '' : 's'} added to list`,
-              message: uniqueNames.join(', '),
-              ...langTag,
+
+            const product = results[0];
+            dispatch({
+              type: 'ADD',
+              product,
+              quantity: intent.quantity,
+              unit: intent.unit !== 'pcs' ? intent.unit : undefined,
             });
-            tts.speak(
-              pickPhrase(lang.short, uniqueNames.length > 1 ? 'addMulti' : restock ? 'addRestock' : 'add', uniqueNames[0]),
-              lang.code,
+            recordHistory(product, intent.quantity);
+            resultsSummary.successes.push({
+              action: 'ADD',
+              title: `Added ${product.name}`,
+              detail: `${intent.quantity} × ${intent.unit !== 'pcs' ? intent.unit : product.unit}`,
+              smartMatch,
+              score: matchScore,
+              product,
+            });
+
+            if (!isMultiCommand) {
+              const sub = findSubstitute(product);
+              const subNote = sub ? ` If it’s sold out, try ${sub.name}.` : '';
+              pushToast({
+                type: 'success',
+                title: smartMatch ? `Smart Match: Added ${product.name}` : `Added ${product.name}`,
+                message: `${intent.quantity} × ${intent.unit !== 'pcs' ? intent.unit : product.unit} · ${formatPrice(product.price)} each${subNote}`,
+                smartMatch,
+                score: matchScore,
+                ...langTag,
+              });
+              tts.speak(pickPhrase(lang.short, restock ? 'addRestock' : 'add', product.name, intent.quantity), lang.code);
+            }
+            break;
+          }
+
+          case 'REMOVE': {
+            let target = list.find(
+              (entry) =>
+                normalize(entry.name).includes(normalize(intent.itemName)) ||
+                normalize(intent.itemName).includes(normalize(entry.name)),
             );
-            setView('list');
-            finish();
-            return;
+
+            if (!target && intent.itemName && list.length > 0) {
+              try {
+                const semantic = await searchCatalogSemantic(intent.itemName, list);
+                if (semantic.match) {
+                  target = list.find((entry) => entry.id === semantic.match.id);
+                }
+              } catch {
+                /* ignore */
+              }
+            }
+
+            if (!intent.itemName || !target) {
+              resultsSummary.failures.push({
+                action: 'REMOVE',
+                query: intent.itemName || cmdText,
+                reason: `“${intent.itemName || cmdText}” isn’t on your list`,
+              });
+              break;
+            }
+
+            dispatch({ type: 'REMOVE', id: target.id });
+            resultsSummary.successes.push({
+              action: 'REMOVE',
+              title: `Removed ${target.name}`,
+              detail: 'Taken off your list.',
+              target,
+            });
+
+            if (!isMultiCommand) {
+              pushToast({ type: 'info', title: `Removed ${target.name}`, message: 'Taken off your list.', ...langTag });
+              tts.speak(pickPhrase(lang.short, 'remove', target.name), lang.code);
+            }
+            break;
           }
 
-          if (!intent.itemName) {
-            notFound();
-            return;
+          case 'UPDATE': {
+            let updateTarget = list.find(
+              (entry) =>
+                normalize(entry.name).includes(normalize(intent.itemName)) ||
+                normalize(intent.itemName).includes(normalize(entry.name)),
+            );
+
+            if (!updateTarget && intent.itemName && list.length > 0) {
+              try {
+                const semantic = await searchCatalogSemantic(intent.itemName, list);
+                if (semantic.match) {
+                  updateTarget = list.find((entry) => entry.id === semantic.match.id);
+                }
+              } catch {
+                /* ignore */
+              }
+            }
+
+            if (!intent.itemName || !updateTarget) {
+              resultsSummary.failures.push({
+                action: 'UPDATE',
+                query: intent.itemName || cmdText,
+                reason: `“${intent.itemName || cmdText}” isn’t on your list`,
+              });
+              break;
+            }
+
+            dispatch({ type: 'SET_QTY', id: updateTarget.id, quantity: intent.quantity });
+            resultsSummary.successes.push({
+              action: 'UPDATE',
+              title: `Updated ${updateTarget.name}`,
+              detail: `Quantity set to ${intent.quantity}.`,
+              updateTarget,
+            });
+
+            if (!isMultiCommand) {
+              pushToast({ type: 'success', title: `Updated ${updateTarget.name}`, message: `Quantity set to ${intent.quantity}.`, ...langTag });
+              tts.speak(pickPhrase(lang.short, 'update', updateTarget.name, intent.quantity), lang.code);
+            }
+            break;
           }
-          const results = searchCatalog(intent.itemName);
-          if (results.length === 0) {
-            notFound();
-            return;
+
+          case 'SEARCH': {
+            runSearch(intent.itemName || cmdText, intent.maxPrice);
+            resultsSummary.successes.push({
+              action: 'SEARCH',
+              title: `Search: ${intent.itemName || cmdText}`,
+              detail: intent.maxPrice ? `Under $${intent.maxPrice}` : 'All items',
+            });
+            break;
           }
-          addProduct(results[0], intent.quantity, intent.unit !== 'pcs' ? intent.unit : null, {
-            lang,
-            phraseCategory: restock ? 'addRestock' : 'add',
-            detected: selectedLang === 'auto' ? { label: lang.label, code: lang.code } : null,
-          });
-          setView('list');
-          finish();
-          return;
-        }
 
-        case 'REMOVE': {
-          const target = list.find(
-            (entry) =>
-              normalize(entry.name).includes(normalize(intent.itemName)) ||
-              normalize(intent.itemName).includes(normalize(entry.name)),
-          );
-          if (!intent.itemName || !target) {
-            pushToast({ type: 'error', title: 'Nothing to remove', message: `“${intent.itemName || trimmed}” isn’t on your list.` });
-            tts.speak(pickPhrase(lang.short, 'notFound'), lang.code);
-            finish();
-            return;
+          case 'CLEAR': {
+            dispatch({ type: 'CLEAR' });
+            resultsSummary.successes.push({
+              action: 'CLEAR',
+              title: 'List cleared',
+              detail: 'Every item was removed.',
+            });
+
+            if (!isMultiCommand) {
+              pushToast({ type: 'info', title: 'List cleared', message: 'Every item was removed.', ...langTag });
+              tts.speak(pickPhrase(lang.short, 'cleared'), lang.code);
+            }
+            break;
           }
-          dispatch({ type: 'REMOVE', id: target.id });
-          setView('list');
-          pushToast({ type: 'info', title: `Removed ${target.name}`, message: 'Taken off your list.', ...langTag });
-          tts.speak(pickPhrase(lang.short, 'remove', target.name), lang.code);
-          finish();
-          return;
-        }
 
-        case 'UPDATE': {
-          const updateTarget = list.find(
-            (entry) =>
-              normalize(entry.name).includes(normalize(intent.itemName)) ||
-              normalize(intent.itemName).includes(normalize(entry.name)),
-          );
-          if (!intent.itemName || !updateTarget) {
-            pushToast({ type: 'error', title: 'Nothing to update', message: `“${intent.itemName || trimmed}” isn’t on your list.` });
-            tts.speak(pickPhrase(lang.short, 'notFound'), lang.code);
-            finish();
-            return;
+          default: {
+            resultsSummary.failures.push({
+              action: 'UNKNOWN',
+              query: cmdText,
+              reason: `Could not understand “${cmdText}”`,
+            });
           }
-          dispatch({ type: 'SET_QTY', id: updateTarget.id, quantity: intent.quantity });
-          setView('list');
-          pushToast({ type: 'success', title: `Updated ${updateTarget.name}`, message: `Quantity set to ${intent.quantity}.`, ...langTag });
-          tts.speak(pickPhrase(lang.short, 'update', updateTarget.name, intent.quantity), lang.code);
-          finish();
-          return;
         }
-
-        case 'SEARCH': {
-          runSearch(intent.itemName || trimmed, intent.maxPrice);
-          finish();
-          return;
-        }
-
-        case 'CLEAR': {
-          dispatch({ type: 'CLEAR' });
-          setView('list');
-          pushToast({ type: 'info', title: 'List cleared', message: 'Every item was removed.', ...langTag });
-          tts.speak(pickPhrase(lang.short, 'cleared'), lang.code);
-          finish();
-          return;
-        }
-
-        default:
-          notFound();
       }
+
+      // 3. Multi-Command Combined Feedback & Summary Toasts
+      if (isMultiCommand) {
+        if (resultsSummary.successes.length > 0) {
+          const successDesc = resultsSummary.successes.map((s) => s.title).join(' · ');
+          const hasSmart = resultsSummary.successes.some((s) => s.smartMatch);
+          pushToast({
+            type: 'success',
+            title: `Executed ${resultsSummary.successes.length} action${resultsSummary.successes.length === 1 ? '' : 's'}`,
+            message: successDesc,
+            smartMatch: hasSmart,
+            ...langTag,
+          });
+          tts.speak(pickPhrase(lang.short, 'addMulti'), lang.code);
+        }
+
+        // Report partial failures clearly
+        if (resultsSummary.failures.length > 0) {
+          const failDesc = resultsSummary.failures.map((f) => f.reason).join('; ');
+          pushToast({
+            type: 'error',
+            title: `${resultsSummary.failures.length} action${resultsSummary.failures.length === 1 ? '' : 's'} failed`,
+            message: failDesc,
+            ...langTag,
+          });
+          if (resultsSummary.successes.length === 0) {
+            tts.speak(pickPhrase(lang.short, 'notFound'), lang.code);
+          }
+        }
+      } else if (resultsSummary.successes.length === 0 && resultsSummary.failures.length > 0) {
+        // Single command failed
+        pushToast({
+          type: 'error',
+          title: 'Item not found',
+          message: resultsSummary.failures[0].reason,
+          ...langTag,
+        });
+        tts.speak(pickPhrase(lang.short, 'notFound'), lang.code);
+      }
+
+      setView('list');
+      finish();
     },
     [addProduct, browserShort, lastDetected, list, pushToast, recordHistory, runSearch, selectedLang, setLastDetected, tts],
   );
