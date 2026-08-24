@@ -6,15 +6,6 @@
 
 ---
 
-## 📸 Screenshots
-
-<!-- Place screenshots in public/screenshots/ or docs/ -->
-- **Voice Bar & Waveform**: Real-time microphone listening with multilingual indicator and continuous mode. *(Placeholder: `docs/screenshots/voice-bar.png`)*
-- **Smart Suggestions Panel**: Personalized recency/frequency history picks, seasonal produce, and sale items. *(Placeholder: `docs/screenshots/smart-suggestions.png`)*
-- **Search & Categorized List**: Real-time catalog filtering with price bounds, out-of-stock substitute recommendations, and 12-department grouping. *(Placeholder: `docs/screenshots/catalog-search.png`)*
-
----
-
 ## ✨ Features
 
 ### 1. 🎙️ Voice Input
